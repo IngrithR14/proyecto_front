@@ -1,0 +1,35 @@
+::ng-deep .tabs-eda .mat-mdc-tab-body-content {
+  padding-top: 4px;
+}
+
+.contenido-tab {
+  padding-top: 16px;
+}
+
+.tabla-responsive {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.resumen-cal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.subtitulo-ct {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 14px 0 6px;
+  color: var(--mat-sys-on-surface);
+}
+
+.tabla-ct {
+  font-size: 0.72rem;
+}
+
+.tabla-ct tbody td,
+.tabla-ct thead th {
+  padding: 5px 8px;
+}

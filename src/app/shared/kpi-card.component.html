@@ -1,0 +1,23 @@
+@if (enlace) {
+  <a class="tarjeta kpi" [routerLink]="enlace" [class]="'tono-' + tono">
+    <div class="kpi-superior">
+      <span class="kpi-etiqueta">{{ etiqueta }}</span>
+      <mat-icon class="kpi-icono">{{ icono }}</mat-icon>
+    </div>
+    <div class="kpi-valor">{{ valor }}</div>
+    @if (subtitulo) {
+      <div class="kpi-subtitulo">{{ subtitulo }}</div>
+    }
+  </a>
+} @else {
+  <div class="tarjeta kpi" [class]="'tono-' + tono">
+    <div class="kpi-superior">
+      <span class="kpi-etiqueta">{{ etiqueta }}</span>
+      <mat-icon class="kpi-icono">{{ icono }}</mat-icon>
+    </div>
+    <div class="kpi-valor">{{ valor }}</div>
+    @if (subtitulo) {
+      <div class="kpi-subtitulo">{{ subtitulo }}</div>
+    }
+  </div>
+}

@@ -1,0 +1,121 @@
+<div class="pagina-titulo">
+  <mat-icon>smart_toy</mat-icon>
+  <h1>Asistente de ruteo</h1>
+</div>
+<p class="pagina-subtitulo">
+  Chatbot con 9 herramientas de análisis sobre la API de ruteo. Responde con agregados del
+  universo, resultados MonteCarlo y comparativas de estrategias. Nunca expone datos personales.
+</p>
+
+<div class="row g-3">
+  <div class="col-12 col-xl-8">
+    <div class="tarjeta chat">
+      <div class="chat-cabecera">
+        <div class="estado-llm">
+          @if (llmConfigurado) {
+            <span class="punto punto-ok"></span>
+            <span>
+              LLM configurado — {{ saludLlm()?.proveedor }} · {{ saludLlm()?.modelo }}
+            </span>
+          } @else {
+            <span class="punto punto-off"></span>
+            <span>LLM no configurado — configure <code>LLM_API_KEY</code> en <code>.env</code></span>
+          }
+        </div>
+        <span class="datilla">Sesión: {{ sesion() }}</span>
+      </div>
+
+      <div class="chat-historial" #scroll aria-live="polite">
+        @for (m of mensajes(); track $index) {
+          <div class="burbuja" [class.burbuja-usuario]="m.rol === 'usuario'" [class.burbuja-asistente]="m.rol === 'asistente'">
+            <div class="burbuja-cabecera">
+              <mat-icon>{{ m.rol === 'usuario' ? 'person' : 'smart_toy' }}</mat-icon>
+              <span class="burbuja-quien">{{ m.rol === 'usuario' ? 'Usted' : 'Asistente' }}</span>
+            </div>
+            <div class="burbuja-texto">{{ m.texto }}</div>
+
+            @if (m.rol === 'asistente' && m.herramientas?.length) {
+              <div class="herramientas">
+                <span class="herramientas-titulo">Herramientas usadas:</span>
+                @for (h of m.herramientas; track h) {
+                  <code class="herramienta">{{ h }}</code>
+                }
+              </div>
+            }
+            @if (m.rol === 'asistente' && m.incidencias?.length) {
+              <ul class="incidencias">
+                @for (inc of m.incidencias; track $index) {
+                  <li>{{ inc }}</li>
+                }
+              </ul>
+            }
+            @if (m.rol === 'asistente' && m.privacidadOk === false) {
+              <div class="aviso-privacidad">
+                <mat-icon>gpp_maybe</mat-icon>
+                La respuesta pudo incluir datos sensibles; revísela antes de compartirla.
+              </div>
+            }
+          </div>
+        }
+
+        @if (enviando()) {
+          <div class="burbuja burbuja-asistente">
+            <div class="burbuja-cabecera">
+              <mat-icon>smart_toy</mat-icon>
+              <span class="burbuja-quien">Asistente</span>
+            </div>
+            <div class="escribiendo">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <form class="chat-entrada" (submit)="$event.preventDefault(); enviar()">
+        <mat-form-field class="campo" appearance="outline" subscriptSizing="dynamic">
+          <mat-icon matPrefix>edit_note</mat-icon>
+          <input
+            matInput
+            name="pregunta"
+            placeholder="Escriba su pregunta sobre el universo, zonas, costos…"
+            [value]="texto()"
+            (input)="texto.set($any($event.target).value)"
+            [disabled]="enviando()"
+            autocomplete="off" />
+        </mat-form-field>
+        <button
+          mat-flat-button
+          color="primary"
+          class="boton-enviar"
+          type="submit"
+          [disabled]="enviando() || !texto().trim()">
+          <mat-icon>send</mat-icon>
+          Enviar
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12 col-xl-4">
+    <div class="tarjeta mb-3">
+      <h2 class="tarjeta-titulo"><mat-icon>help</mat-icon> Ejemplos de preguntas</h2>
+      <div class="ejemplos">
+        @for (e of ejemplos; track e) {
+          <button class="ejemplo" type="button" (click)="usarEjemplo(e)">{{ e }}</button>
+        }
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2 class="tarjeta-titulo"><mat-icon>verified_user</mat-icon> Reglas de privacidad</h2>
+      <ul class="reglas">
+        <li>Sin cédulas, nombres de clientes ni direcciones: sólo agregados y coordenadas.</li>
+        <li>Las 9 herramientas del asistente devuelven métricas agregadas del universo.</li>
+        <li>Si <code>privacidad_ok</code> es falso, se muestra un aviso junto a la respuesta.</li>
+        <li>La conversación se asocia a una sesión anónima local de este navegador.</li>
+      </ul>
+      <app-chip-colorida texto_="Sin datos personales: sólo agregados y coordenadas" tono="info" />
+    </div>
+  </div>
+</div>
+

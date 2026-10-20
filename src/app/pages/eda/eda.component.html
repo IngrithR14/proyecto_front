@@ -1,0 +1,327 @@
+<div class="pagina-titulo">
+  <mat-icon>query_stats</mat-icon>
+  <h1>Análisis exploratorio de datos (EDA)</h1>
+</div>
+<p class="pagina-subtitulo">
+  Perfil del universo de clientes, distribuciones, histogramas, carga por zona, dispersión
+  geográfica y relaciones entre variables. Sólo se muestran agregados y coordenadas: sin cédulas,
+  nombres ni direcciones.
+</p>
+
+<app-carga-estado [cargando]="cargando()" [error]="error()" mensaje="Calculando el resumen EDA…">
+  <button acciones mat-stroked-button color="primary" (click)="reintentar()">
+    <mat-icon>refresh</mat-icon> Reintentar
+  </button>
+  <mat-tab-group class="tabs-eda" animationDuration="220ms">
+    <!-- ============ KPIs y distribuciones ============ -->
+    <mat-tab label="Perfil y distribuciones">
+      <div class="contenido-tab">
+        <div class="row g-3 mb-3">
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Clientes (base)" [valor]="fmtEntero(kpis.n_clientes)" icono="groups" />
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Zonas" [valor]="fmtEntero(kpis.n_zonas)" icono="grid_on" />
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Visitas/mes" [valor]="fmtEntero(kpis.visitas_mes_rep)" icono="event_available" />
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Activos" [valor]="fmtEntero(kpis.activos)" [subtitulo]="fmtPct(kpis.pct_activos / 100) + ' de la base'" icono="check_circle" tono="exito" />
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Rurales" [valor]="fmtEntero(kpis.es_rural)" icono="agriculture" />
+          </div>
+          <div class="col-6 col-md-4 col-xl-2">
+            <app-kpi-card etiqueta="Sucursales" [valor]="fmtEntero(kpis.sucursales)" icono="add_business" />
+          </div>
+        </div>
+
+        <div class="row g-3">
+          @for (d of distribuciones; track d.clave) {
+            @if (dist(d.clave); as dist) {
+              <div class="col-12 col-lg-6">
+                <div class="tarjeta">
+                  <h2 class="tarjeta-titulo"><mat-icon>{{ d.icono }}</mat-icon> {{ d.titulo }}</h2>
+                  <p class="tarjeta-subtitulo">{{ d.nota }} · total {{ fmtEntero(dist.total) }}</p>
+                  <div class="grafica">
+                    <app-chart type="bar" [data]="chartDist(d.clave).data" [options]="chartDist(d.clave).options" [height]="270" />
+                  </div>
+                  <div class="tabla-responsive">
+                    <table class="tabla-suave">
+                      <thead>
+                        <tr>
+                          <th>Categoría</th>
+                          <th class="num">Clientes</th>
+                          <th class="num">%</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (lab of dist.labels; track lab; let i = $index) {
+                          <tr>
+                            <td>{{ lab }}</td>
+                            <td class="num">{{ fmtEntero(dist.values[i]) }}</td>
+                            <td class="num">{{ fmtPct((dist.pct[i] ?? 0) / 100) }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- ============ Histogramas ============ -->
+    <mat-tab label="Histogramas">
+      <div class="contenido-tab">
+        <div class="row g-3">
+          <div class="col-12 col-xl-6">
+            <div class="tarjeta">
+              <h2 class="tarjeta-titulo"><mat-icon>bar_chart</mat-icon> Visitas al mes por cliente</h2>
+              <p class="tarjeta-subtitulo">
+                Frecuencia de clientes según el número de visitas registradas en el ciclo.
+              </p>
+              <div class="grafica">
+                <app-chart type="bar" [data]="chartHist('visitas_mes_rep').data" [options]="chartHist('visitas_mes_rep').options" [height]="300" />
+              </div>
+              @if (hist('visitas_mes_rep'); as h) {
+                <div class="resumen-cal">
+                  <span class="metadato">Media: {{ fmtDec1(h.media) }}</span>
+                  <span class="metadato">Desv. estándar: {{ fmtDec1(h.std) }}</span>
+                  <span class="metadato">Mín: {{ fmtDec1(h.min) }}</span>
+                  <span class="metadato">Máx: {{ fmtDec1(h.max) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+          <div class="col-12 col-xl-6">
+            <div class="tarjeta">
+              <h2 class="tarjeta-titulo"><mat-icon>hourglass_bottom</mat-icon> Antigüedad (años)</h2>
+              <p class="tarjeta-subtitulo">
+                Distribución de la antigüedad del cliente en el portafolio.
+              </p>
+              <div class="grafica">
+                <app-chart type="bar" [data]="chartHist('antiguedad_anios').data" [options]="chartHist('antiguedad_anios').options" [height]="300" />
+              </div>
+              @if (hist('antiguedad_anios'); as h) {
+                <div class="resumen-cal">
+                  <span class="metadato">Media: {{ fmtDec1(h.media) }} años</span>
+                  <span class="metadato">Desv. estándar: {{ fmtDec1(h.std) }}</span>
+                  <span class="metadato">Mín: {{ fmtDec1(h.min) }}</span>
+                  <span class="metadato">Máx: {{ fmtDec1(h.max) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- ============ Carga por zona ============ -->
+    <mat-tab label="Carga por zona">
+      <div class="contenido-tab">
+        <div class="tarjeta mb-3">
+          <h2 class="tarjeta-titulo"><mat-icon>stacked_bar_chart</mat-icon> Top 15 zonas por carga</h2>
+          <p class="tarjeta-subtitulo">
+            Clientes y visitas por día de las zonas más exigentes; la línea de referencia marca el
+            máximo recomendado (44 visitas por asesor al día) para valorar la factibilidad.
+          </p>
+          <div class="grafica">
+            <app-chart type="bar" [data]="chartCarga().data" [options]="chartCarga().options" [height]="330" />
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <h2 class="tarjeta-titulo"><mat-icon>table_chart</mat-icon> Detalle de zonas</h2>
+          <p class="tarjeta-subtitulo">Top {{ filasCarga.length }} sobre {{ cargaZona()?.n_zonas ?? '—' }} zonas.</p>
+          <div class="tabla-responsive tabla-scroll">
+            <table class="tabla-suave">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Zona</th>
+                  <th class="num">Clientes</th>
+                  <th class="num">Activos</th>
+                  <th class="num">Visitas/mes</th>
+                  <th class="num">Visitas/día</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (f of filasCarga; track f.zona; let i = $index) {
+                  <tr [class.fila-actual]="f.vd > 44">
+                    <td>{{ i + 1 }}</td>
+                    <td><strong>{{ f.zona }}</strong></td>
+                    <td class="num">{{ fmtEntero(f.clientes) }}</td>
+                    <td class="num">{{ fmtEntero(f.activos) }}</td>
+                    <td class="num">{{ fmtEntero(f.vm) }}</td>
+                    <td class="num">{{ fmtDec1(f.vd) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="datilla mt-2 mb-0">
+            Las filas resaltadas superan el máximo recomendado de 44 visitas por asesor al día.
+          </p>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- ============ Mapa ============ -->
+    <mat-tab label="Mapa de dispersión">
+      <div class="contenido-tab">
+        <div class="tarjeta">
+          <h2 class="tarjeta-titulo"><mat-icon>map</mat-icon> Dispersión geográfica de clientes</h2>
+          <p class="tarjeta-subtitulo">
+            {{ fmtEntero(puntosMapa.length) }} coordenadas agregadas coloreadas por categoría de
+            actividad (muestra del servidor). Pase el cursor sobre un punto para ver el detalle.
+          </p>
+          <app-mapa-leaflet
+            [puntos]="puntosMapa"
+            [leyenda]="leyendaScatter"
+            [colorDe]="colorPorCategoria"
+            [altura]="540"
+            [radio]="4.5" />
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- ============ Correlaciones ============ -->
+    <mat-tab label="Correlaciones y bivariados">
+      <div class="contenido-tab">
+        <div class="row g-3">
+          <div class="col-12 col-xl-8">
+            <div class="tarjeta mb-3">
+              <h2 class="tarjeta-titulo"><mat-icon>grid_view</mat-icon> Pearson — variables numéricas</h2>
+              <p class="tarjeta-subtitulo">
+                Correlación lineal entre variables numéricas; escala divergente rojo–azul centrada en
+                0 (azul = negativa, rojo = positiva).
+              </p>
+              <app-heatmap
+                [filas]="correlaciones.pearson.index"
+                [columnas]="correlaciones.pearson.columns"
+                [matriz]="correlaciones.pearson.matriz"
+                escala="diverging"
+                [maxAbs]="1" />
+              <div class="barra-leyenda mt-2">
+                <span>−1</span>
+                <span
+                  class="gradiente"
+                  style="background: linear-gradient(90deg, #2f6fb2, #ffffff, #d64545)">
+                </span>
+                <span>+1</span>
+                <span>· Intensidad del color = magnitud de la correlación</span>
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-12 col-lg-6">
+                <div class="tarjeta">
+                  <h2 class="tarjeta-titulo"><mat-icon>category</mat-icon> Cramér's V — categóricas</h2>
+                  <p class="tarjeta-subtitulo">Asociación entre pares de variables categóricas (0 a 1).</p>
+                  <app-heatmap
+                    [filas]="correlaciones.cramers_v.index"
+                    [columnas]="correlaciones.cramers_v.columns"
+                    [matriz]="correlaciones.cramers_v.matriz"
+                    escala="yilorrd" />
+                  <div class="barra-leyenda mt-2">
+                    <span>0</span>
+                    <span class="gradiente" style="background: linear-gradient(90deg, #ffffcc, #fd8d3c, #b10026)"></span>
+                    <span>1</span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-lg-6">
+                <div class="tarjeta">
+                  <h2 class="tarjeta-titulo"><mat-icon>insights</mat-icon> Eta — categórica × numérica</h2>
+                  <p class="tarjeta-subtitulo">Proporción de varianza numérica explicada por la categoría.</p>
+                  <app-heatmap
+                    [filas]="correlaciones.eta.index"
+                    [columnas]="correlaciones.eta.columns"
+                    [matriz]="correlaciones.eta.matriz"
+                    escala="azul" />
+                  <div class="barra-leyenda mt-2">
+                    <span>0</span>
+                    <span class="gradiente" style="background: linear-gradient(90deg, #f7fbff, #6baed6, #08306b)"></span>
+                    <span>1</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 col-xl-4">
+            <div class="tarjeta mb-3">
+              <h2 class="tarjeta-titulo"><mat-icon>compare_arrows</mat-icon> Pares con |r| ≥ 0,5</h2>
+              <p class="tarjeta-subtitulo">
+                Correlaciones de Pearson más fuertes del portafolio (ordenadas por magnitud).
+              </p>
+              @if (paresRelevantes.length) {
+                <table class="tabla-suave">
+                  <thead>
+                    <tr>
+                      <th>Variable A</th>
+                      <th>Variable B</th>
+                      <th class="num">r</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of paresRelevantes; track p.a + p.b) {
+                      <tr>
+                        <td>{{ p.a }}</td>
+                        <td>{{ p.b }}</td>
+                        <td
+                          class="num"
+                          [style.color]="p.r < 0 ? '#1565c0' : '#c62828'"
+                          [style.font-weight]="600">
+                          {{ fmtDec2(p.r) }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              } @else {
+                <p class="datilla mb-0">No hay pares con |r| ≥ 0,5.</p>
+              }
+            </div>
+
+            <div class="tarjeta">
+              <h2 class="tarjeta-titulo"><mat-icon>table_chart</mat-icon> Análisis bivariado categórico</h2>
+              <p class="tarjeta-subtitulo">Porcentajes por fila de cada cruce categórico.</p>
+              @for (key of crosstabKeys; track key) {
+                <h3 class="subtitulo-ct">{{ tituloCrosstab(key) }}</h3>
+                <div class="tabla-responsive mb-3">
+                  <table class="tabla-suave tabla-ct">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        @for (col of crosstabs[key].columnas; track col) {
+                          <th class="num">{{ col }}</th>
+                        }
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (fila of crosstabs[key].filas; track fila; let i = $index) {
+                        <tr>
+                          <td>{{ fila }}</td>
+                          @for (v of crosstabs[key].matriz[i]; track $index) {
+                            <td class="num">{{ fmtDec1(v) }}%</td>
+                          }
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+</app-carga-estado>

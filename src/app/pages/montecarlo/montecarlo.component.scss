@@ -1,0 +1,106 @@
+.selector-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.selector-valor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.k-valor {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--mat-sys-primary, #12639f);
+  font-variant-numeric: tabular-nums;
+}
+
+.slider-k {
+  width: 100%;
+  --mdc-slider-handle-shape: 50%;
+}
+
+.selector-pies {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+}
+
+.atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+
+  button {
+    font-size: 0.75rem;
+  }
+}
+
+.tarjeta-mejor {
+  border-left: 4px solid #f9a825;
+}
+
+.supuestos {
+  margin: 4px 0 10px;
+  padding-left: 18px;
+
+  li {
+    font-size: 0.8rem;
+    line-height: 1.55;
+    color: var(--mat-sys-on-surface-variant, #546e7a);
+    margin-bottom: 6px;
+  }
+}
+
+.tabla-mc {
+  min-width: 720px;
+  font-size: 0.78rem;
+}
+
+.fila-clic {
+  cursor: pointer;
+}
+
+.etiqueta-actual {
+  margin-left: 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: #1565c0;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.texto-alerta {
+  color: #c62828;
+  font-weight: 600;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  color: #7a5b00;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}

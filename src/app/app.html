@@ -1,0 +1,96 @@
+<mat-sidenav-container class="app-container">
+  <mat-sidenav
+    class="app-sidenav"
+    [mode]="esMovil() ? 'over' : 'side'"
+    [opened]="abierto()"
+    (closedStart)="abierto.set(false)">
+    <div class="marca">
+      <mat-icon class="marca-icono">hub</mat-icon>
+      <div>
+        <div class="marca-titulo">Ruteo</div>
+        <div class="marca-subtitulo">Hijos de León</div>
+      </div>
+    </div>
+
+    <mat-nav-list class="menu">
+      @for (item of items; track item.ruta) {
+        <a
+          mat-list-item
+          [routerLink]="item.ruta"
+          routerLinkActive="activo"
+          [routerLinkActiveOptions]="{ exact: item.ruta === '/' }"
+          [matTooltip]="item.desc"
+          matTooltipPosition="right">
+          <mat-icon matListItemIcon>{{ item.icono }}</mat-icon>
+          <span matListItemTitle>{{ item.etiqueta }}</span>
+          <span matListItemLine class="menu-desc">{{ item.desc }}</span>
+        </a>
+      }
+    </mat-nav-list>
+
+    <div class="sidenav-pie">
+      <mat-icon>shield_moon</mat-icon>
+      <span>Sin datos personales: sólo agregados y coordenadas.</span>
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="app-content">
+    <mat-toolbar class="app-toolbar" color="primary">
+      <button
+        mat-icon-button
+        class="boton-menu"
+        (click)="alternarSidenav()"
+        aria-label="Abrir o cerrar menú">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <span class="titulo">Ruteo Hijos de León</span>
+      <span class="subtitulo d-none d-md-inline">Analítica de ruteo de asesores · Cundinamarca y Boyacá</span>
+
+      <span class="relleno"></span>
+
+      <div class="estado-barra d-none d-xl-flex" aria-label="Estado del universo de datos">
+        @if (cargando()) {
+          <span class="estado-cargando">Cargando universo…</span>
+        } @else if (error()) {
+          <button
+            type="button"
+            class="estado-cargando estado-reintentar"
+            matTooltip="Reintentar la conexión con el backend"
+            (click)="recargarEstado()">
+            <mat-icon>cloud_off</mat-icon>
+            Backend no disponible · Reintentar
+          </button>
+        } @else if (universos(); as u) {
+          <span class="dato" matTooltip="Clientes con visita asignada">
+            <mat-icon>groups</mat-icon> {{ fmtEntero(u.n_clientes) }} clientes
+          </span>
+          <span class="separador"></span>
+          <span class="dato" matTooltip="Visitas totales en el ciclo">
+            <mat-icon>event_available</mat-icon> {{ fmtEntero(u.visitas_totales_mes) }} visitas/mes
+          </span>
+          <span class="separador"></span>
+          <span class="dato" matTooltip="Zonas rutable sobre zonas base">
+            <mat-icon>grid_on</mat-icon> {{ fmtEntero(u.zonas_rutable) }} zonas rutable
+          </span>
+          <span class="separador"></span>
+          <span class="dato" matTooltip="Máximo de visitas que puede hacer un asesor en un día">
+            <mat-icon>speed</mat-icon> Máx. visitas/día {{ fmtEntero(params()?.cap_dinamico ?? 44) }}
+          </span>
+        }
+      </div>
+    </mat-toolbar>
+
+    <main class="app-main">
+      <router-outlet />
+    </main>
+
+    <footer class="app-footer">
+      <span class="pie-privacidad">
+        <mat-icon>shield_moon</mat-icon>
+        Sin datos personales: sólo agregados y coordenadas.
+      </span>
+      <span class="pie-meta">Distribuidora Hijos de León · proyecto de especialización · FastAPI + Angular</span>
+    </footer>
+  </mat-sidenav-content>
+</mat-sidenav-container>

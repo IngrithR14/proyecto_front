@@ -1,0 +1,62 @@
+.resumen-calendario {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.seccion-titulo {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 26px 0 12px;
+}
+
+.tarjeta-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tarjeta-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 40, 60, 0.12);
+  color: inherit;
+}
+
+.tarjeta-link-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 8px;
+
+  mat-icon {
+    color: var(--mat-sys-primary, #1e88e5);
+  }
+}
+
+.tarjeta-link p {
+  font-size: 0.82rem;
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+
+.ir {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--mat-sys-primary, #1e88e5);
+  font-size: 0.8rem;
+  font-weight: 600;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}

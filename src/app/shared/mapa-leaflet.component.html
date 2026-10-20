@@ -1,0 +1,21 @@
+<div class="mapa-wrap" [style.height.px]="altura">
+  <div #mapa class="mapa"></div>
+
+  @if (leyendaCalculada; as leg) {
+    <div class="leyenda mat-elevation-z2" role="complementary" aria-label="Leyenda del mapa">
+      <div class="leyenda-titulo">{{ leg.titulo }}</div>
+      <div class="leyenda-items">
+        @for (item of leg.items; track item.label) {
+          <div class="leyenda-item">
+            <span class="punto" [style.background]="item.color"></span>
+            <span>{{ item.label }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (!puntos?.length && !territorios?.length) {
+    <div class="mapa-vacio">Sin coordenadas disponibles para mostrar.</div>
+  }
+</div>

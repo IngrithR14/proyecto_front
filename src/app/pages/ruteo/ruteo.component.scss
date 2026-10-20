@@ -1,0 +1,137 @@
+.tabla-responsive {
+  overflow-x: auto;
+}
+
+.fila-ganadora {
+  background: #e8f5e9 !important;
+
+  td {
+    font-weight: 500;
+  }
+}
+
+.tarjeta-wilcoxon {
+  border-left: 4px solid var(--mat-sys-primary, #1e88e5);
+}
+
+.wilcoxon-valor {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta-destacada {
+  background: linear-gradient(180deg, #eef7ff 0%, #ffffff 70%);
+  border-left: 4px solid #43a047;
+
+  p {
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+}
+
+.explicacion {
+  margin: 6px 0 0;
+  padding-left: 18px;
+
+  li {
+    font-size: 0.84rem;
+    line-height: 1.6;
+    margin-bottom: 8px;
+    color: var(--mat-sys-on-surface-variant, #546e7a);
+
+    strong {
+      color: var(--mat-sys-on-surface, #10202c);
+    }
+  }
+}
+
+/* -------- Tabla de rutas del primer ciclo -------- */
+.tabla-scroll {
+  max-height: 460px;
+  overflow-y: auto;
+  border: 1px solid #e3e9ee;
+  border-radius: 8px;
+
+  thead th {
+    position: sticky;
+    top: 0;
+    background: #f5f8fa;
+    z-index: 1;
+  }
+}
+
+.fecha {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.secuencia {
+  max-width: 46ch;
+  line-height: 1.9;
+}
+
+.codigo {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #eef3f7;
+  border: 1px solid #dde6ec;
+  border-radius: 4px;
+  padding: 0 5px;
+  margin: 0 3px 3px 0;
+}
+
+.fila-alerta {
+  background: #fff8e1 !important;
+}
+
+/* -------- Semáforo de condiciones (reglas de decisión) -------- */
+.semaforo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px dashed #e3e9ee;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  .semaforo-texto {
+    flex: 1;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--mat-sys-on-surface-variant, #546e7a);
+  }
+}
+
+/* Iconos ✓ / ✗ / neutro (semáforo y tablas de dimensiones) */
+mat-icon.ok {
+  color: #2e7d32;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+mat-icon.no {
+  color: #e53935;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+mat-icon.neutro {
+  color: #90a4ae;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}

@@ -1,0 +1,60 @@
+.hm-scroll {
+  overflow: auto;
+  max-height: 520px;
+  border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.hm {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.68rem;
+  margin: 4px;
+}
+
+.hm-corner,
+.hm-fila {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+  text-align: left;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+  padding: 4px 8px;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-corner {
+  z-index: 3;
+}
+
+.hm-col {
+  padding: 4px 6px;
+  font-weight: 600;
+  color: var(--mat-sys-on-surface-variant, #546e7a);
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  text-align: center;
+}
+
+.hm-celda {
+  min-width: 44px;
+  text-align: center;
+  padding: 4px 5px;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  transition: outline 0.1s ease;
+}
+
+.hm-celda:hover {
+  outline: 2px solid var(--mat-sys-primary, #1e88e5);
+}

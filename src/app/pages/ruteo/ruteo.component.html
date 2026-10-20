@@ -1,0 +1,668 @@
+<div class="pagina-titulo">
+  <mat-icon>route</mat-icon>
+  <h1>Modelo de ruteo: constructores de rutas y estrategias de territorio</h1>
+</div>
+<p class="pagina-subtitulo">
+  <strong>Vecino más cercano (NN)</strong> y <strong>colonias de hormigas (ACO)</strong> son dos
+  constructores de la secuencia de visitas; se comparan <em>por pares de ruta</em> (misma ruta,
+  mismo territorio y misma fecha, con las mismas restricciones de tope, ventana y fechas).
+  También se muestran las estrategias de territorio contra <strong>ACTUAL</strong> y la regla de
+  decisión que gobierna la recomendación.
+</p>
+
+<app-carga-estado
+  [cargando]="cargando()"
+  [error]="error()"
+  mensaje="Cargando el protocolo de evaluación…">
+  <button acciones mat-stroked-button color="primary" (click)="reintentar()">
+    <mat-icon>refresh</mat-icon> Reintentar
+  </button>
+  @if (aviso(); as a) {
+    <p class="datilla mb-3">{{ a }}</p>
+  }
+
+  <!-- ============================ KPI del protocolo (sección 2) -->
+  @if (nnAco(); as nn) {
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Ahorro medio por ruta"
+          [valor]="kpiAhorro + ' %'"
+          [subtitulo]="'intervalo de confianza del 95 %: ' + kpiIntervalo"
+          icono="savings"
+          tono="exito" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Rutas comparadas"
+          [valor]="fmtEntero(nn.global?.n_rutas)"
+          [subtitulo]="fmtEntero(nn.global?.n_clientes) + ' clientes en esas rutas'"
+          icono="alt_route" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Decisión de la regla"
+          [valor]="decisionCorto"
+          subtitulo="5 condiciones declaradas antes de ver resultados"
+          icono="rule"
+          [tono]="decisionTono" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Ciclo completo con ACO"
+          [valor]="kpiTiempos"
+          [subtitulo]="'en paralelo con ' + fmtEntero(nn.global?.n_jobs ?? null) + ' procesos · límite 30 min'"
+          icono="timer" />
+      </div>
+    </div>
+  }
+
+  <!-- ============================ KPI de la validación cruzada -->
+  @if (kfold(); as kf) {
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Distancia por ciclo"
+          [valor]="fmtEntero(metricaDe('km_ciclo')?.media)"
+          subtitulo="km · media de los 5 pliegues"
+          icono="route" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Costo por ciclo"
+          [valor]="fmtDec2(metricaDe('costo_det_M')?.media)"
+          subtitulo="M COP · fijo + combustible"
+          icono="payments" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Pico diario por asesor"
+          [valor]="fmtEntero(metricaDe('pico_carga')?.media)"
+          [subtitulo]="'máximo diario: ' + fmtEntero(cap() ?? null) + ' visitas'"
+          icono="speed" />
+      </div>
+      <div class="col-6 col-lg-3">
+        <app-kpi-card
+          etiqueta="Días sobre el tope"
+          [valor]="fmtDec1(metricaDe('dias_sobre_cap')?.media)"
+          subtitulo="media por ciclo · debe ser 0"
+          icono="warning"
+          [tono]="(metricaDe('dias_sobre_cap')?.media ?? 1) === 0 ? 'exito' : 'alerta'" />
+      </div>
+    </div>
+  }
+
+  <!-- ============================ Sección 2: NN vs ACO -->
+  @if (nnAco(); as nn) {
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-xl-6">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>traffic</mat-icon> Semáforo: regla de decisión</h2>
+          <p class="tarjeta-subtitulo">
+            Las cinco condiciones se declararon <strong>antes</strong> de ver los resultados y no se
+            ajustaron después. Todas deben cumplirse para adoptar ACO en todo el ciclo.
+          </p>
+          <div class="mb-3">
+            @if (reglaNnAco; as r) {
+              <app-chip-colorida [texto_]="decisionTexto" [tono]="decisionTono" />
+            } @else {
+              <app-chip-colorida texto_="Sin datos" tono="neutro" />
+            }
+          </div>
+          <ul class="semaforo">
+            @for (c of condicionesNnAco; track c.clave) {
+              <li>
+                <mat-icon [class.ok]="c.cumple" [class.no]="!c.cumple">
+                  {{ c.cumple ? 'check_circle' : 'cancel' }}
+                </mat-icon>
+                <span class="semaforo-texto">{{ c.etiqueta }}</span>
+                <app-chip-colorida
+                  [texto_]="c.cumple ? 'Se cumple' : 'No se cumple'"
+                  [tono]="c.cumple ? 'exito' : 'alerta'" />
+              </li>
+            }
+          </ul>
+          @if (reglaNnAco?.rangos_con_aco?.length; as n) {
+            <p class="datilla mb-0">
+              La decisión es mixta: ACO sólo en {{ n }} rango de tamaño de ruta
+              ({{ reglaNnAco?.rangos_con_aco?.join(' · ') }}), NN en el resto.
+            </p>
+          }
+        </div>
+      </div>
+
+      <div class="col-12 col-xl-6">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>table_chart</mat-icon> Ahorro por tamaño de ruta</h2>
+          <p class="tarjeta-subtitulo">
+            Intervalo de confianza del 95 % obtenido por remuestreo de rutas (10.000 muestras,
+            semilla fija 777). Porcentaje de rutas en que ACO queda mejor, igual (tolerancia
+            declarada de 0,1 %) o peor.
+          </p>
+          <div class="tabla-responsive">
+            <table class="tabla-suave">
+              <thead>
+                <tr>
+                  <th>Tamaño de ruta</th>
+                  <th class="num">Rutas</th>
+                  <th class="num">Ahorro medio</th>
+                  <th class="num">Intervalo de confianza del 95 %</th>
+                  <th class="num">Mejor / igual / peor (%)</th>
+                  <th class="num">Km NN</th>
+                  <th class="num">Km ACO</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (t of nn.por_tamano; track t.rango) {
+                  <tr>
+                    <td><strong>{{ t.rango }}</strong></td>
+                    <td class="num">{{ fmtEntero(t.n_rutas) }}</td>
+                    <td class="num">
+                      <strong>{{ fmtDec1(t.ahorro_medio_pct) }} %</strong>
+                    </td>
+                    <td class="num">
+                      {{ fmtDec1(t.ic95_inf_pct) }} % – {{ fmtDec1(t.ic95_sup_pct) }} %
+                    </td>
+                    <td class="num">
+                      {{ fmtEntero(t.pct_mejor) }} / {{ fmtEntero(t.pct_empate) }} /
+                      {{ fmtEntero(t.pct_peor) }}
+                    </td>
+                    <td class="num">{{ fmtEntero(t.km_nn_total) }}</td>
+                    <td class="num">{{ fmtEntero(t.km_aco_total) }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="datilla mt-2 mb-0">
+            Violaciones de ventana de visita en todo el experimento:
+            <strong>{{ fmtEntero(nn.global?.violaciones_ventana) }}</strong> (debe ser 0).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-xl-6">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>bar_chart</mat-icon> Histograma de ahorros por ruta</h2>
+          <p class="tarjeta-subtitulo">
+            Cada barra cuenta cuántas rutas quedaron con ese ahorro. Verde: ACO quedó mejor;
+            gris: empate (diferencia ≤ 0,1 %); rojo: ACO quedó peor.
+          </p>
+          <div class="grafica">
+            <app-chart
+              type="bar"
+              [data]="histogramaAhorros.data"
+              [options]="histogramaAhorros.options"
+              [height]="280" />
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-xl-6">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>show_chart</mat-icon> Ahorro frente a ausencias</h2>
+          <p class="tarjeta-subtitulo">
+            Simulación de robustez: se retiran clientes de asistencia (0 %, 15 % y 30 % de
+            ausencias) y se vuelve a medir el ahorro sobre las mismas rutas. La banda sombreada es
+            el intervalo de confianza del 95 %.
+          </p>
+          <div class="grafica">
+            <app-chart
+              type="line"
+              [data]="curvaAusencias.data"
+              [options]="curvaAusencias.options"
+              [height]="280" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-xl-7">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>schedule</mat-icon> Tiempos de cómputo</h2>
+          <p class="tarjeta-subtitulo">
+            La condición de tiempo de la regla usa el reloj de pared del ciclo completo con los
+            procesos en paralelo, no la suma de CPU de cada ruta.
+          </p>
+          <div class="grafica">
+            <app-chart
+              type="bar"
+              [data]="tiemposChart.data"
+              [options]="tiemposChart.options"
+              [height]="230" />
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-xl-5">
+        <div class="tarjeta tarjeta-wilcoxon mb-3">
+          <h2 class="tarjeta-titulo"><mat-icon>balance</mat-icon> Contraste por ruta</h2>
+          <p class="tarjeta-subtitulo">
+            Prueba de Wilcoxon pareada sobre los kilómetros de ACO y de NN por ruta (muestra
+            grande, por eso se informa también el tamaño del efecto).
+          </p>
+          @if (nnAco()?.wilcoxon; as w) {
+            <div class="wilcoxon-valor">p = {{ pValorTexto }}</div>
+            <div class="datilla">Valor p</div>
+            <div class="wilcoxon-valor">r = {{ fmtDec2(w.efecto_r) }}</div>
+            <div class="datilla">Tamaño del efecto ({{ w.interpretacion_efecto ?? '—' }})</div>
+            <div class="mt-2">
+              @if (w.significativo_005) {
+                <app-chip-colorida texto_="Diferencia significativa (α = 0,05)" tono="exito" />
+              } @else {
+                <app-chip-colorida texto_="Sin diferencia significativa" tono="alerta" />
+              }
+            </div>
+            <p class="datilla mt-2 mb-0">n = {{ fmtEntero(w.n) }} rutas pareadas.</p>
+          } @else {
+            <p class="tarjeta-subtitulo">Sin datos.</p>
+          }
+        </div>
+
+        <div class="tarjeta tarjeta-destacada">
+          <h2 class="tarjeta-titulo"><mat-icon>scatter_plot</mat-icon> Dispersión del ACO</h2>
+          <p>
+            Cada ruta se resuelve con {{ fmtEntero(nn.global?.dispersion_aco?.semillas_por_ruta ?? null) }}
+            semillas del algoritmo y se usa la <strong>mediana</strong> como valor ACO.
+          </p>
+          <p class="mb-0">
+            Desviación estándar media entre semillas:
+            <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_media_seeds_km ?? null) }} km</strong>;
+            máxima: <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_max_seeds_km ?? null) }} km</strong>.
+            NN es determinista, no tiene dispersión.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta mb-3">
+      <h2 class="tarjeta-titulo"><mat-icon>gavel</mat-icon> Criterio escrito de la regla</h2>
+      <p class="tarjeta-subtitulo mb-0">{{ criterioNnAco }}</p>
+    </div>
+  } @else {
+    <div class="tarjeta mb-3">
+      <h2 class="tarjeta-titulo"><mat-icon>hourglass_empty</mat-icon> Comparación NN vs ACO</h2>
+      <p class="tarjeta-subtitulo mb-0">
+        Aún no está precalculada. Ejecuta <code>python -m app.precompute</code> (fase de
+        comparación de rutas).
+      </p>
+    </div>
+  }
+
+  <!-- ============================ Sección 3: estrategias contra ACTUAL -->
+  @if (estrategias(); as es) {
+    <div class="tarjeta mb-3">
+      <h2 class="tarjeta-titulo"><mat-icon>account_tree</mat-icon> Estrategias contra ACTUAL</h2>
+      <p class="tarjeta-subtitulo">
+        Ocho dimensiones medidas sobre la misma partición (80 % de train para ajustar y 20 % de
+        test sellado que sólo entra por inserción más barata). Los umbrales de la regla son
+        <strong>propuesta, no calibrada</strong>: se declararon antes de ver los resultados.
+      </p>
+      <div class="mb-3">
+        @if (reglaEstrategias; as r) {
+          @if (r.decision === 'recomendada') {
+            <app-chip-colorida [texto_]="'Se adopta ' + r.recomendada" tono="exito" />
+          } @else {
+            <app-chip-colorida texto_="Ninguna estrategia cumple las condiciones" tono="alerta" />
+          }
+          <span class="datilla ms-2">
+            Candidatas posibles: {{ r.pool_candidatas?.join(', ') || '—' }}
+          </span>
+        }
+      </div>
+
+      <div class="tabla-scroll">
+        <table class="tabla-suave">
+          <thead>
+            <tr>
+              <th>Dimensión</th>
+              @for (f of filasEstrategias; track f.estrategia) {
+                <th class="num">
+                  {{ f.estrategia }}
+                  @if (f.es_diagnostica) {
+                    <span class="datilla">diagnóstica</span>
+                  }
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (d of dimColumnas; track d.clave) {
+              <tr>
+                <td>
+                  <strong>{{ d.etiqueta }}</strong>
+                  <span class="datilla"> · umbral: {{ d.umbral }}</span>
+                </td>
+                @for (f of filasEstrategias; track f.estrategia) {
+                  <td class="num">
+                    <strong>{{ valorDimension(f, d.clave).valor }}</strong>
+                    <span class="datilla d-block">{{ valorDimension(f, d.clave).detalle }}</span>
+                    @switch (cumpleDimension(f, d.clave)) {
+                      @case (true) {
+                        <mat-icon class="ok">check_circle</mat-icon>
+                      }
+                      @case (false) {
+                        <mat-icon class="no">cancel</mat-icon>
+                      }
+                      @default {
+                        <mat-icon class="neutro">remove</mat-icon>
+                      }
+                    }
+                  </td>
+                }
+              </tr>
+            }
+            <tr>
+              <td><strong>Cumple las 6 condiciones</strong></td>
+              @for (f of filasEstrategias; track f.estrategia) {
+                <td class="num">
+                  @if (f.cumple_todas && !f.es_diagnostica) {
+                    <app-chip-colorida texto_="Sí" tono="exito" />
+                  } @else if (f.es_diagnostica) {
+                    <app-chip-colorida texto_="No entra (diagnóstica)" tono="neutro" />
+                  } @else {
+                    <app-chip-colorida texto_="No" tono="alerta" />
+                  }
+                </td>
+              }
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tabla-scroll mt-3">
+        <table class="tabla-suave">
+          <thead>
+            <tr>
+              <th>Estrategia</th>
+              @for (c of condicionesEstrategia; track c.clave) {
+                <th class="num">{{ c.etiqueta }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of filasEstrategias; track f.estrategia) {
+              <tr>
+                <td><strong>{{ f.estrategia }}</strong></td>
+                @for (c of condicionesEstrategia; track c.clave) {
+                  <td class="num">
+                    @switch (condicionEstrategia(f.estrategia, c.clave)) {
+                      @case (true) {
+                        <mat-icon class="ok">check_circle</mat-icon>
+                      }
+                      @case (false) {
+                        <mat-icon class="no">cancel</mat-icon>
+                      }
+                      @default {
+                        <mat-icon class="neutro">remove</mat-icon>
+                      }
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="datilla mt-2 mb-0">{{ notaCriterio }}</p>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-xl-7">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>swap_horiz</mat-icon> Reporte del re-balanceo (F2)</h2>
+          @if (f2; as r) {
+            <p class="tarjeta-subtitulo">
+              Reparación estructural mínima calculada con atributos de entrada de
+              {{ r.poblacion_del_rebalanceo === 'todos' ? 'todos los clientes' : r.poblacion_del_rebalanceo }}
+              (única excepción declarada del protocolo; nunca se usan resultados).
+            </p>
+            <div class="row g-3 mb-2">
+              <div class="col-6 col-lg-3">
+                <app-kpi-card
+                  etiqueta="Clientes movidos"
+                  [valor]="fmtEntero(r.clientes_movidos)"
+                  [subtitulo]="fmtDec2(r.clientes_movidos_pct) + ' % de los clientes'"
+                  icono="person_move" />
+              </div>
+              <div class="col-6 col-lg-3">
+                <app-kpi-card
+                  etiqueta="Días sobre el tope"
+                  [valor]="fmtEntero(r.dias_sobre_tope_antes) + ' → ' + fmtEntero(r.dias_sobre_tope_despues)"
+                  subtitulo="antes → después"
+                  icono="warning"
+                  [tono]="r.logro_factibilidad ? 'exito' : 'alerta'" />
+              </div>
+              <div class="col-6 col-lg-3">
+                <app-kpi-card
+                  etiqueta="Pico diario"
+                  [valor]="fmtEntero(r.pico_antes) + ' → ' + fmtEntero(r.pico_despues)"
+                  [subtitulo]="'tope operativo ' + fmtEntero(cap() ?? null) + ' visitas'"
+                  icono="speed"
+                  [tono]="(r.pico_despues ?? 999) <= (cap() ?? 44) ? 'exito' : 'alerta'" />
+              </div>
+              <div class="col-6 col-lg-3">
+                <app-kpi-card
+                  etiqueta="Distancia del ciclo"
+                  [valor]="fmtDec1(r.delta_km) + ' km'"
+                  [subtitulo]="fmtDec2(r.delta_km_pct) + ' % vs ACTUAL'"
+                  icono="route" />
+              </div>
+            </div>
+            @if (f2.plan_evaluado; as pe) {
+              <p class="datilla mb-0">
+                Plan desplegado completo (mismos territorios y depósitos, todos los clientes):
+                {{ fmtEntero(pe.km_actual) }} km en ACTUAL → {{ fmtEntero(pe.km_rebal) }} km con
+                el re-balanceo ({{ fmtDec2(pe.delta_km_plan_pct) }} %) · cobertura
+                {{ fmtPct(pe.cobertura_actual) }} → {{ fmtPct(pe.cobertura_rebal) }}.
+              </p>
+            }
+            <p class="datilla mt-2 mb-0">{{ r.nota }}</p>
+          } @else {
+            <p class="tarjeta-subtitulo mb-0">Sin reporte precalculado.</p>
+          }
+        </div>
+      </div>
+
+      <div class="col-12 col-xl-5">
+        <div class="tarjeta h-100">
+          <h2 class="tarjeta-titulo"><mat-icon>science</mat-icon> Estabilidad entre semillas</h2>
+          @if (estabilidad; as e) {
+            <p class="tarjeta-subtitulo">
+              Tres corridas independientes (semillas {{ e.semillas?.join(', ') }}) eligen K con la
+              misma regla; se compara el orden de estrategias (correlación de rangos).
+            </p>
+            <div class="mb-2">
+              @if (e.cumple) {
+                <app-chip-colorida
+                  [texto_]="'Estable: ' + fmtDec1((e.acuerdo_misma_K_o_mas_menos_1 ?? 0) * 100) + ' % de acuerdo'"
+                  tono="exito" />
+              } @else {
+                <app-chip-colorida texto_="Sin estabilidad suficiente" tono="alerta" />
+              }
+            </div>
+            <p class="datilla mb-0">
+              Umbral: {{ fmtEntero(e.umbral) }} % de acuerdos (misma K o ±1) · K elegidas por
+              semilla: {{ e.K_elegidas?.join(', ') }}.
+            </p>
+            <p class="datilla mt-2 mb-0">{{ e.nota }}</p>
+          } @else {
+            <p class="tarjeta-subtitulo mb-0">Sin análisis de estabilidad precalculado.</p>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
+    <div class="tarjeta mb-3">
+      <h2 class="tarjeta-titulo"><mat-icon>hourglass_empty</mat-icon> Estrategias contra ACTUAL</h2>
+      <p class="tarjeta-subtitulo mb-0">
+        Aún no está precalculada. Ejecuta <code>python -m app.precompute</code> (fase de
+        evaluación de estrategias).
+      </p>
+    </div>
+  }
+
+  <!-- ============================ Validación cruzada (K-Fold) -->
+  <div class="tarjeta mt-3">
+    <h2 class="tarjeta-titulo"><mat-icon>hub</mat-icon> Validación cruzada (K-Fold, 5 pliegues)</h2>
+    <p class="tarjeta-subtitulo">
+      Cada pliegue ajusta sobre 4 y evalúa sobre el retenido, que entra <strong>sólo por
+      inserción más barata</strong> respetando el tope, la ventana de visita y las fechas
+      permitidas. Es la parte del protocolo que mide la generalización sin contaminar el test.
+    </p>
+    @if (kfold(); as kf) {
+      <div class="tabla-responsive">
+        <table class="tabla-suave">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th class="num">Media</th>
+              <th class="num">Desv.</th>
+              <th class="num">Mín</th>
+              <th class="num">Máx</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of kf.metricas; track m) {
+              <tr>
+                <td>{{ etiquetaMetrica(m) }}</td>
+                <td class="num">
+                  <strong>{{ fmtDec2(metricaDe(m)?.media) }}</strong>
+                  <span class="datilla"> {{ unidadMetrica(m) }}</span>
+                </td>
+                <td class="num">± {{ fmtDec2(metricaDe(m)?.desv) }}</td>
+                <td class="num">{{ fmtDec2(metricaDe(m)?.min) }}</td>
+                <td class="num">{{ fmtDec2(metricaDe(m)?.max) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-2">
+        @if (kf.resumen.pct_factible >= 50) {
+          <app-chip-colorida
+            [texto_]="fmtEntero(kf.resumen.pct_factible) + ' % de pliegues factibles'"
+            tono="exito" />
+        } @else {
+          <app-chip-colorida
+            [texto_]="fmtEntero(kf.resumen.pct_factible) + ' % de pliegues factibles'"
+            tono="alerta" />
+        }
+        @if (metricaDe('arrepentimiento_pct'); as ar) {
+          <app-chip-colorida
+            class="ms-2"
+            [texto_]="'Arrepentimiento: ' + fmtDec1(ar.media) + ' %'"
+            tono="info" />
+        }
+      </div>
+      <p class="datilla mt-2 mb-0">{{ notaKfold }}</p>
+    } @else {
+      <p class="tarjeta-subtitulo">La validación cruzada aún no está precalculada.</p>
+    }
+  </div>
+
+  <!-- ============================ Tabla de rutas -->
+  <div class="tarjeta mt-3">
+    <h2 class="tarjeta-titulo"><mat-icon>calendar_month</mat-icon> Rutas del primer ciclo (1.ª quincena, 13 días)</h2>
+    <p class="tarjeta-subtitulo">
+      Plan día por día por asesor: secuencia de paradas y distancia. La secuencia usa el
+      <strong>CódigoCliente</strong> (código interno, nunca nombres ni cédulas).
+    </p>
+    <div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+      <mat-button-toggle-group
+        [value]="estrategiaRutas()"
+        (change)="cambiarEstrategia($event.value)"
+        aria-label="Estrategia">
+        <mat-button-toggle value="recomendada">
+          {{ etiquetaPlanAlternativo() }}
+        </mat-button-toggle>
+        <mat-button-toggle value="actual">ACTUAL (zonas reales)</mat-button-toggle>
+      </mat-button-toggle-group>
+      @if (rutas(); as r) {
+        <span class="datilla">
+          {{ fmtEntero(r.n_rutas) }} rutas · {{ fmtEntero(r.total_visitas) }} visitas ·
+          {{ fmtDec1(r.total_km) }} km · {{ fmtEntero(r.n_asesores) }} asesores
+        </span>
+      }
+    </div>
+    @if (rutas(); as r) {
+      <div class="tabla-scroll">
+        <table class="tabla-suave">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Asesor</th>
+              <th class="num">N.º visitas</th>
+              <th class="num">Km</th>
+              <th>Secuencia de paradas (CódigoCliente)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of r.rutas; track $index) {
+              <tr [class.fila-alerta]="f.excede_cap">
+                <td class="fecha">{{ f.fecha.slice(8, 10) }}/{{ f.fecha.slice(5, 7) }}</td>
+                <td><strong>{{ f.asesor }}</strong></td>
+                <td class="num">{{ fmtEntero(f.n_visitas) }}</td>
+                <td class="num">{{ fmtDec1(f.km) }}</td>
+                <td class="secuencia">
+                  @for (cod of f.secuencia; track $index) {
+                    <span class="codigo">{{ cod }}</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <p class="datilla mt-2 mb-0">
+        Filas en ámbar: ese día la ruta supera el máximo de visitas por asesor al día.
+      </p>
+    } @else {
+      <p class="tarjeta-subtitulo">La tabla de rutas aún no está precalculada.</p>
+    }
+  </div>
+
+  <!-- ============================ Cómo leer -->
+  <div class="tarjeta mt-3">
+    <h2 class="tarjeta-titulo"><mat-icon>description</mat-icon> Cómo leer este resultado</h2>
+    <ul class="explicacion">
+      <li>
+        <strong>Ajuste y evaluación están separados</strong>: el 20 % de los clientes (estratificado
+        por zona) queda como test sellado y sólo se usa para evaluar, por inserción más barata.
+        Ningún parámetro se ajustó para acercar el resultado a lo esperado.
+      </li>
+      <li>
+        <strong>Comparación por pares de ruta</strong>: NN y ACO reciben exactamente la misma ruta
+        (mismos clientes, fechas, tope y ventana), así que la diferencia de kilómetros es
+        atribuible sólo al constructor de la secuencia.
+      </li>
+      <li>
+        <strong>Regla NN vs ACO</strong>: cinco condiciones con umbrales declarados de antemano
+        (ahorro mínimo, intervalo de confianza, robustez ante ausencias, cero violaciones de
+        ventana y tiempo de ciclo). Si alguna falla, no se adopta ACO en todo el ciclo; si sólo
+        gana en un rango de tamaño de ruta, la decisión es mixta.
+      </li>
+      <li>
+        <strong>Regla de estrategias</strong>: seis condiciones contra ACTUAL y sólo
+        <em>REBAL_58</em> (re-balanceo mínimo) puede ser recomendada; la reagrupación global de
+        asesores es diagnóstica y nunca se recomienda. Si ninguna candidata cumple, el veredicto
+        es literalmente "ninguna estrategia cumple las condiciones".
+      </li>
+      <li>
+        <strong>Umbrales no calibrados</strong>: los valores de decisión son una propuesta
+        declarada antes de los resultados; el costo fijo por asesor sigue siendo un supuesto
+        (1.800.000 COP/mes) y las horas extra requieren el simulador del ciclo completo.
+      </li>
+      <li>
+        <strong>Límite conocido</strong>: con un mes único no hay validación temporal; la
+        generalización se sostiene sobre pliegues e inserción de test, no sobre otros meses.
+      </li>
+      <li>
+        <strong>Privacidad</strong>: todo lo que se muestra son agregados y códigos internos; no
+        se exponen cédulas, nombres ni direcciones de clientes.
+      </li>
+    </ul>
+  </div>
+</app-carga-estado>

@@ -1,0 +1,15 @@
+@if (cargando) {
+  <div class="estado" role="status" aria-live="polite">
+    <mat-spinner diameter="42"></mat-spinner>
+    <p class="estado-msg">{{ mensaje }}</p>
+  </div>
+} @else if (error) {
+  <div class="estado estado-error" role="alert">
+    <mat-icon>hourglass_top</mat-icon>
+    <p class="estado-titulo">{{ tituloError }}</p>
+    <p class="estado-msg">{{ error }}</p>
+    <ng-content select="[acciones]" />
+  </div>
+} @else {
+  <ng-content />
+}

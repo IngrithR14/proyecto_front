@@ -1,0 +1,364 @@
+<div class="pagina-titulo">
+  <mat-icon>casino</mat-icon>
+  <h1>MonteCarlo: ¿cuántos asesores (K) necesitamos?</h1>
+</div>
+<p class="pagina-subtitulo">
+  Simulación estocástica del ciclo completo ({{ fmtEntero(nSim()) }} escenarios por estrategia) para
+  K entre {{ kMin() }} y {{ kMax() }} asesores. Mide costo, kilómetros, factibilidad y pico de
+  carga frente al máximo de visitas que puede hacer un asesor en un día ({{ capDinamico() }}). El escenario vigente
+  es <strong>K = {{ kActual() }}</strong>.
+</p>
+
+<app-carga-estado [cargando]="cargando()" [error]="error()" mensaje="Cargando la tabla MonteCarlo…">
+  <button acciones mat-stroked-button color="primary" (click)="reintentar()">
+    <mat-icon>refresh</mat-icon> Reintentar
+  </button>
+  <!-- ============ Selector de K ============ -->
+  <div class="tarjeta mb-3">
+    <div class="selector-cabecera">
+      <div>
+        <h2 class="tarjeta-titulo"><mat-icon>tune</mat-icon> Seleccione el número de asesores</h2>
+        <p class="tarjeta-subtitulo mb-0">
+          Arrastra el control para comparar cualquier K; los paneles se actualizan al instante.
+        </p>
+      </div>
+      <div class="selector-valor">
+        <span class="k-valor">K = {{ kSel() }}</span>
+        @if (kSel() === kActual()) {
+          <app-chip-colorida texto_="ACTUAL" tono="primario" />
+        }
+        @if (kSel() === kMinimaFactible) {
+          <app-chip-colorida texto_="Mínima factible" tono="info" />
+        }
+        @if (kSel() === kMejorFactible) {
+          <app-chip-colorida texto_="Mejor factible" tono="exito" />
+        }
+        @if (kSel() === kMasBarata) {
+          <app-chip-colorida texto_="Más barata global" tono="alerta" />
+        }
+      </div>
+    </div>
+
+    <mat-slider
+      class="slider-k"
+      [min]="kMin()"
+      [max]="kMax()"
+      step="1"
+      discrete
+      showTickMarks>
+      <input matSliderThumb [value]="kSel()" (valueChange)="setK($event)" aria-label="Número de asesores K" />
+    </mat-slider>
+
+    <div class="selector-pies">
+      <span>K = {{ kMin() }} (mínimo)</span>
+      @if (ksDisponibles.length) {
+        <span class="datilla">Simuladas: {{ ksDisponibles.length }} estrategias (K = {{ ksDisponibles[0] }}–{{ ksDisponibles[ksDisponibles.length - 1] }})</span>
+      }
+      <span>K = {{ kMax() }} (máximo)</span>
+    </div>
+
+    <div class="atajos">
+      <span class="datilla">Ir a:</span>
+      <button mat-stroked-button (click)="setK(kActual())">ACTUAL ({{ kActual() }})</button>
+      @if (kMinimaFactible !== null) {
+        <button mat-stroked-button (click)="setK(kMinimaFactible!)">Mínima factible ({{ kMinimaFactible }})</button>
+      }
+      @if (kMejorFactible !== null) {
+        <button mat-stroked-button (click)="setK(kMejorFactible!)">Mejor factible ({{ kMejorFactible }})</button>
+      }
+      @if (kMasBarata !== null) {
+        <button mat-stroked-button (click)="setK(kMasBarata!)">Más barata ({{ kMasBarata }})</button>
+      }
+    </div>
+  </div>
+
+  <!-- ============ Panel de la K seleccionada ============ -->
+  <app-carga-estado
+    [cargando]="cargandoK()"
+    [error]="errorK()"
+    [mensaje]="'Simulando K = ' + kSel() + '…'"
+    [tituloError]="'K = ' + kSel() + ' aún no simulada'">
+    @if (seleccionada; as e) {
+      <div class="row g-3">
+        <div class="col-12 col-xl-8">
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="Costo medio" [valor]="fmtDec1(e.costo_medio_M)" subtitulo="millones COP por ciclo" icono="payments" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="IC 95 %" [valor]="fmtDec1(e.ic95_inf) + ' – ' + fmtDec1(e.ic95_sup)" subtitulo="millones COP" icono="swap_vert" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="Kilómetros" [valor]="fmtKm(e.km_medio)" subtitulo="recorridos por ciclo" icono="straighten" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="Pico de carga" [valor]="fmtEntero(e.pico_carga)" [subtitulo]="'Máximo diario: ' + capDinamico() + ' visitas'" icono="speed" [tono]="e.pico_carga > capDinamico() ? 'alerta' : 'exito'" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="Cobertura" [valor]="fmtPct(e.cobertura)" subtitulo="visitas atendidas" icono="coverage" />
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+              <app-kpi-card etiqueta="Días sobre el máximo" [valor]="fmtEntero(e.dias_sobre_cap)" subtitulo="por ciclo" icono="warning" [tono]="e.dias_sobre_cap > 0 ? 'alerta' : 'exito'" />
+            </div>
+          </div>
+
+          <div class="tarjeta">
+            <h2 class="tarjeta-titulo"><mat-icon>rule</mat-icon> Factibilidad y métricas de operación</h2>
+            <div class="row g-3 align-items-start">
+              <div class="col-12 col-lg-7">
+                <table class="tabla-suave">
+                  <tbody>
+                    <tr>
+                      <td>Factibilidad (pico ≤ máximo diario, sin horas extra)</td>
+                      <td class="num">
+                        @if (e.factible) {
+                          <app-chip-colorida texto_="Factible" tono="exito" />
+                        } @else {
+                          <app-chip-colorida texto_="No factible" tono="alerta" />
+                        }
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Pico de carga</td>
+                      <td class="num">{{ fmtEntero(e.pico_carga) }} visitas/día (máx. {{ capDinamico() }})</td>
+                    </tr>
+                    <tr>
+                      <td>Días sobre el máximo</td>
+                      <td class="num">{{ fmtEntero(e.dias_sobre_cap) }}</td>
+                    </tr>
+                    <tr>
+                      <td>Utilización máxima</td>
+                      <td class="num">{{ fmtPct(e.utilizacion_max) }}</td>
+                    </tr>
+                    <tr>
+                      <td>Horas medias por día</td>
+                      <td class="num">{{ fmtDec1(e.horas_media_dia) }} h</td>
+                    </tr>
+                    <tr>
+                      <td>Probabilidad de no completar</td>
+                      <td class="num">{{ fmtPct(e.prob_no_completar) }}</td>
+                    </tr>
+                    <tr>
+                      <td>Costo P95 / CVaR 5 %</td>
+                      <td class="num">{{ fmtDec1(e.p95_M) }} / {{ fmtDec1(e.cvar5_M) }} M COP</td>
+                    </tr>
+                    <tr>
+                      <td>Rutas por día</td>
+                      <td class="num">{{ fmtEntero(e.n_rutas_dia) }}</td>
+                    </tr>
+                    <tr>
+                      <td>Δ vs ACTUAL (K={{ kActual() }})</td>
+                      <td class="num">
+                        @if (comparacionSel; as comp) {
+                          <strong
+                            [style.color]="comp.dif_media_M > 0 ? '#c62828' : '#2e7d32'">
+                            {{ fmtDelta(comp.dif_media_M) }}
+                          </strong>
+                          <span class="datilla">
+                            · IC95 {{ fmtDelta(comp.ic95_inf) }} a {{ fmtDelta(comp.ic95_sup) }} ·
+                            p(mejor) {{ fmtPct(comp.p_mejor) }}
+                          </span>
+                        } @else if (kSel() === kActual()) {
+                          <span class="datilla">Escenario de referencia</span>
+                        } @else {
+                          <span class="datilla">Sin comparación precalculada</span>
+                        }
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="col-12 col-lg-5">
+                <div class="grafica">
+                  <app-chart
+                    type="doughnut"
+                    [data]="costoDesgloseChart.data"
+                    [options]="costoDesgloseChart.options"
+                    [height]="260" />
+                </div>
+                <p class="datilla text-center mb-0">Desglose del costo medio del ciclo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-xl-4">
+          <!-- Mejor estrategia -->
+          <div class="tarjeta tarjeta-mejor mb-3">
+            <h2 class="tarjeta-titulo"><mat-icon>emoji_events</mat-icon> Mejor estrategia</h2>
+            @if (mejor(); as m) {
+              <table class="tabla-suave">
+                <tbody>
+                  <tr>
+                    <td>Mínima factible</td>
+                    <td class="num"><strong>K = {{ m.minima_factible }}</strong></td>
+                  </tr>
+                  <tr>
+                    <td>Mejor factible</td>
+                    <td class="num">
+                      @if (m.mejor_factible; as mf) {
+                        <strong>K = {{ mf.K }}</strong> · {{ fmtDec1(mf.costo_medio_M) }} M COP
+                      } @else {
+                        —
+                      }
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Más barata global</td>
+                    @if (m.mas_barata_global; as mb) {
+                      <td class="num">
+                        <strong>K = {{ mb.K }}</strong> · {{ fmtDec1(mb.costo_medio_M) }} M COP
+                        <div class="datilla">no factible (pico {{ mb.pico_carga }})</div>
+                      </td>
+                    }
+                  </tr>
+                  <tr>
+                    <td>Estrategias simuladas</td>
+                    <td class="num">{{ fmtEntero(m.n_estrategias) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            } @else {
+              <p class="datilla mb-0">Calculando la mejor estrategia…</p>
+            }
+          </div>
+
+          <div class="tarjeta">
+            <h2 class="tarjeta-titulo"><mat-icon>fact_check</mat-icon> Supuestos clave</h2>
+            <ul class="supuestos">
+              <li>Máximo de visitas por asesor al día: <strong>{{ capDinamico() }}</strong> (jornada de 8 h, 10 min de servicio medio).</li>
+              <li>Ciclo de 26 días hábiles (13 días hábiles por quincena, 2 quincenas).</li>
+              <li>Costo fijo de asesor y costo por kilómetro son supuestos <strong>no calibrados</strong>: faltan datos internos de costos.</li>
+              <li>Cobertura limitada por zonas rutable (las zonas perdidas no se rutean).</li>
+            </ul>
+            <p class="datilla mb-0">
+              Sensibilidad ±30 % en costo fijo y costo/km: pendiente de calibración con datos de
+              contabilidad.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ Gráficas ============ -->
+      <div class="row g-3 mt-1">
+        <div class="col-12 col-xl-6">
+          <div class="tarjeta">
+            <h2 class="tarjeta-titulo"><mat-icon>show_chart</mat-icon> Costo medio vs número de asesores</h2>
+            <p class="tarjeta-subtitulo">
+              Banda = intervalo de confianza 95 %; línea punteada = escenario ACTUAL
+              (K = {{ kActual() }}).
+            </p>
+            <div class="grafica">
+              <app-chart type="line" [data]="costoChart.data" [options]="costoChart.options" [height]="330" />
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-xl-6">
+          <div class="tarjeta">
+            <h2 class="tarjeta-titulo"><mat-icon>speed</mat-icon> Pico de carga vs número de asesores</h2>
+            <p class="tarjeta-subtitulo">
+              Los puntos rojos superan el máximo recomendado ({{ capDinamico() }} visitas/día): esos escenarios
+              implican sobrecarga o horas extra.
+            </p>
+            <div class="grafica">
+              <app-chart type="line" [data]="picoChart.data" [options]="picoChart.options" [height]="330" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ Tabla comparativa ============ -->
+      <div class="tarjeta mt-3">
+        <h2 class="tarjeta-titulo"><mat-icon>table_chart</mat-icon> Tabla comparativa por estrategia</h2>
+        <p class="tarjeta-subtitulo">
+          Δ vs ACTUAL = costo medio de la K menos el del escenario vigente (K = {{ kActual() }}),
+          con intervalo de confianza 95 %. Resaltadas: mínima factible, mejor factible y la más
+          barata (aunque no sea factible).
+        </p>
+        <div class="tabla-scroll">
+          <table class="tabla-suave tabla-mc">
+            <thead>
+              <tr>
+                <th>K</th>
+                <th class="num">Costo medio (M)</th>
+                <th class="num">Δ vs ACTUAL (IC 95 %)</th>
+                <th class="num">Pico carga</th>
+                <th class="num">Días sobre el máximo</th>
+                <th class="num">Cobertura</th>
+                <th>Factible</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of filasTabla; track f.k) {
+                <tr
+                  [class.fila-actual]="f.esActual"
+                  [class.fila-destacada]="esFilaDestacada(f.k) && !f.esActual"
+                  (click)="setK(f.k)"
+                  class="fila-clic">
+                  <td>
+                    <strong>K = {{ f.k }}</strong>
+                    @if (f.esActual) {
+                      <span class="etiqueta-actual">ACTUAL</span>
+                    }
+                  </td>
+                  <td class="num">{{ fmtDec1(f.e.costo_medio_M) }}</td>
+                  <td class="num">
+                    @if (f.comp; as comp) {
+                      <span [style.color]="comp.dif_media_M > 0 ? '#c62828' : '#2e7d32'">
+                        {{ fmtDelta(comp.dif_media_M) }}
+                      </span>
+                      <div class="datilla">
+                        [{{ fmtDelta(comp.ic95_inf) }}, {{ fmtDelta(comp.ic95_sup) }}] ·
+                        p(mejor) {{ fmtPct(comp.p_mejor, 0) }}
+                      </div>
+                    } @else {
+                      <span class="datilla">—</span>
+                    }
+                  </td>
+                  <td class="num" [class.texto-alerta]="f.e.pico_carga > capDinamico()">
+                    {{ fmtEntero(f.e.pico_carga) }}
+                  </td>
+                  <td class="num">{{ fmtEntero(f.e.dias_sobre_cap) }}</td>
+                  <td class="num">{{ fmtPct(f.e.cobertura) }}</td>
+                  <td>
+                    @if (f.e.factible) {
+                      <app-chip-colorida texto_="Sí" tono="exito" />
+                    } @else {
+                      <app-chip-colorida texto_="No" tono="alerta" />
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <p class="datilla mt-2 mb-0">Haga clic en una fila para explorar esa estrategia.</p>
+      </div>
+
+      <!-- ============ Mapa ============ -->
+      <div class="tarjeta mt-3">
+        <h2 class="tarjeta-titulo"><mat-icon>map</mat-icon> Territorios de la estrategia K = {{ kSel() }}</h2>
+        <p class="tarjeta-subtitulo">
+          Círculos pequeños = puntos agregados coloreados por territorio; círculos grandes =
+          centroides de territorio con su carga de visitas. Sólo coordenadas, nunca direcciones.
+        </p>
+        <app-carga-estado
+          [cargando]="geoCargando()"
+          [error]="geoError()"
+          mensaje="Calculando los territorios de esta estrategia…"
+          tituloError="Mapa aún no precalculado">
+          @if (geoNota(); as nota) {
+            <p class="aviso"><mat-icon>info</mat-icon> {{ nota }}</p>
+          }
+          <app-mapa-leaflet
+            [puntos]="geo()?.puntos ?? []"
+            [territorios]="geo()?.territorios ?? []"
+            [leyenda]="leyendaTerritorios"
+            [altura]="520"
+            [radio]="3.5" />
+        </app-carga-estado>
+      </div>
+    }
+  </app-carga-estado>
+
+</app-carga-estado>
