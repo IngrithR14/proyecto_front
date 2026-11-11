@@ -2,19 +2,13 @@
   <mat-icon>casino</mat-icon>
   <h1>MonteCarlo: ¿cuántos asesores (K) necesitamos?</h1>
 </div>
-<p class="pagina-subtitulo">
-  Simulación estocástica del ciclo completo ({{ fmtEntero(nSim()) }} escenarios por estrategia) para
-  K entre {{ kMin() }} y {{ kMax() }} asesores. Mide costo, kilómetros, factibilidad y pico de
-  carga frente al máximo de visitas que puede hacer un asesor en un día ({{ capDinamico() }}). El escenario vigente
-  es <strong>K = {{ kActual() }}</strong>.
-</p>
 
 <app-carga-estado [cargando]="cargando()" [error]="error()" mensaje="Cargando la tabla MonteCarlo…">
   <button acciones mat-stroked-button color="primary" (click)="reintentar()">
     <mat-icon>refresh</mat-icon> Reintentar
   </button>
   <!-- ============ Selector de K ============ -->
-  <div class="tarjeta mb-3">
+  <div class="tarjeta mb-3 tarjeta-ambar">
     <div class="selector-cabecera">
       <div>
         <h2 class="tarjeta-titulo"><mat-icon>tune</mat-icon> Seleccione el número de asesores</h2>
@@ -25,7 +19,7 @@
       <div class="selector-valor">
         <span class="k-valor">K = {{ kSel() }}</span>
         @if (kSel() === kActual()) {
-          <app-chip-colorida texto_="ACTUAL" tono="primario" />
+          <app-chip-colorida texto_="ACTUAL" tono="ambar" />
         }
         @if (kSel() === kMinimaFactible) {
           <app-chip-colorida texto_="Mínima factible" tono="info" />

@@ -352,7 +352,7 @@ export class MonteCarloComponent implements OnInit {
           {
             label: `Máximo diario (${cap})`,
             data: filas.map(() => cap),
-            borderColor: '#f9a825',
+            borderColor: '#d4a92c',
             borderDash: [7, 5],
             borderWidth: 2,
             pointRadius: 0,

@@ -1,8 +1,58 @@
 /* Tema Material 3 (claro) + Bootstrap 5 + Leaflet + estilos globales del dashboard */
+@use 'sass:color';
+@use 'sass:map';
+@use 'sass:math';
 @use '@angular/material' as mat;
 
 @import 'bootstrap/dist/css/bootstrap.min.css';
 @import 'leaflet/dist/leaflet.css';
+
+/* ---------- Paletas de marca (Material 3) ----------
+   Rojo bavaria #EC1C24 = primary · amarillo quemado #D4A92C = tertiary.
+   Material 3 exige rampas tonales completas (las mismas 20 claves que
+   $red-palette), así que se generan mezclando el color base con negro o
+   blanco. El tono 40 es el color de marca exacto, por lo que
+   --mat-sys-primary sale literalmente #EC1C24. */
+$rojo-bavaria: #ec1c24;
+$amarillo-quemado: #d4a92c;
+
+$tonalidades: (0, 10, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 95, 98, 99, 100);
+
+/// Tono de una rampa M3: 0 = negro, 100 = blanco, 40 = color base.
+@function _tono($base, $t) {
+  @if $t == 0 {
+    @return #000;
+  }
+  @if $t == 100 {
+    @return #fff;
+  }
+  @if $t < 40 {
+    // por debajo del tono base: se mezcla hacia el negro
+    @return color.mix($base, #000, math.div($t * 100, 40) * 1%);
+  }
+  // por encima del tono base: se mezcla hacia el blanco
+  @return color.mix($base, #fff, math.div((100 - $t) * 100, 60) * 1%);
+}
+
+/// Rampa tonal completa (las 16 claves tonales) de un color.
+@function _rampa($base) {
+  $m: ();
+  @each $t in $tonalidades {
+    $m: map.set($m, $t, _tono($base, $t));
+  }
+  @return $m;
+}
+
+/// Paleta M3 completa: rampa de marca + secundario desaturado + los
+/// neutros que ya usa la app + el error semántico de Material.
+@function _paleta-m3($base) {
+  $p: _rampa($base);
+  $p: map.merge($p, (secondary: _rampa(color.adjust($base, $saturation: -45%))));
+  $p: map.merge($p, (neutral: map.get(mat.$azure-palette, neutral)));
+  $p: map.merge($p, (neutral-variant: map.get(mat.$azure-palette, neutral-variant)));
+  $p: map.merge($p, (error: map.get(mat.$red-palette, error)));
+  @return $p;
+}
 
 html {
   height: 100%;
@@ -10,8 +60,8 @@ html {
   @include mat.theme(
     (
       color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$spring-green-palette,
+        primary: _paleta-m3($rojo-bavaria),
+        tertiary: _paleta-m3($amarillo-quemado),
       ),
       typography: Roboto,
       density: 0,
@@ -22,7 +72,7 @@ html {
 :root {
   --tono-exito: #2e7d32;
   --tono-alerta: #c62828;
-  --tono-advertencia: #f9a825;
+  --tono-advertencia: #d4a92c;
   --borde-suave: var(--mat-sys-outline-variant, #e2e8f0);
 }
 
@@ -44,7 +94,7 @@ body {
   margin-bottom: 4px;
 
   mat-icon {
-    color: var(--mat-sys-primary, #1e88e5);
+    color: var(--mat-sys-primary, #ec1c24);
   }
 
   h1 {
@@ -90,7 +140,7 @@ body {
     font-size: 20px;
     width: 20px;
     height: 20px;
-    color: var(--mat-sys-primary, #1e88e5);
+    color: var(--mat-sys-primary, #ec1c24);
   }
 }
 
@@ -132,7 +182,7 @@ body {
   }
 
   tbody tr:hover {
-    background: #f3f8fc;
+    background: #fdf4f4;
   }
 
   .num {
@@ -156,7 +206,7 @@ body {
 }
 
 .fila-actual {
-  background: #e3f0fd !important;
+  background: #fdecec !important;
 
   td {
     font-weight: 600;
@@ -177,21 +227,6 @@ body {
   background: var(--mat-sys-surface-container, #eef3f7);
   border-radius: 999px;
   padding: 3px 10px;
-}
-
-.barra-leyenda {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.72rem;
-  color: var(--mat-sys-on-surface-variant, #546e7a);
-
-  .gradiente {
-    height: 9px;
-    width: 150px;
-    border-radius: 5px;
-    border: 1px solid var(--borde-suave);
-  }
 }
 
 /* Scrollbar discreta */

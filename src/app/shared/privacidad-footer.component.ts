@@ -26,7 +26,7 @@ import { MatIconModule } from '@angular/material/icon';
         align-items: flex-start;
         background: var(--mat-sys-surface-container-low, #f5f7fa);
         border: 1px solid var(--mat-sys-outline-variant, #dfe4ea);
-        border-left: 4px solid var(--mat-sys-primary, #1e88e5);
+        border-left: 4px solid var(--mat-sys-primary, #ec1c24);
         border-radius: 10px;
         padding: 12px 16px;
         margin: 24px 0 8px;

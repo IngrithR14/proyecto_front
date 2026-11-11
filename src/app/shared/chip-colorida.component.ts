@@ -6,7 +6,7 @@ import { Component, Input } from '@angular/core';
   standalone: true,
   template: `
     <span class="chip" [style.background]="fondo" [style.color]="texto">
-      <span class="punto" [style.background]="texto"></span>{{ texto_ }}
+      <span class="punto" [style.background]="punto"></span>{{ texto_ }}
     </span>
   `,
   styles: [
@@ -32,7 +32,7 @@ import { Component, Input } from '@angular/core';
 })
 export class ChipColoridaComponent {
   @Input() texto_ = '';
-  @Input() tono: 'exito' | 'alerta' | 'info' | 'neutro' | 'primario' = 'neutro';
+  @Input() tono: 'exito' | 'alerta' | 'info' | 'neutro' | 'primario' | 'ambar' = 'neutro';
 
   get fondo(): string {
     switch (this.tono) {
@@ -41,9 +41,11 @@ export class ChipColoridaComponent {
       case 'alerta':
         return '#fdecea';
       case 'info':
-        return '#e3f2fd';
+        return '#fdf3d9';
+      case 'ambar':
+        return '#f6ecc9';
       case 'primario':
-        return '#e8f0fe';
+        return '#fdecec';
       default:
         return '#eceff1';
     }
@@ -56,11 +58,18 @@ export class ChipColoridaComponent {
       case 'alerta':
         return '#c62828';
       case 'info':
-        return '#01579b';
+        return '#7a5b00';
+      case 'ambar':
+        return '#6f5100';
       case 'primario':
-        return '#1565c0';
+        return '#b3121a';
       default:
         return '#546e7a';
     }
+  }
+
+  /** Punto del chip: en ámbar usa el color de marca (#D4A92C); en el resto, el texto. */
+  get punto(): string {
+    return this.tono === 'ambar' ? '#d4a92c' : this.texto;
   }
 }

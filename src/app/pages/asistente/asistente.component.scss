@@ -74,8 +74,8 @@
 
 .burbuja-usuario {
   align-self: flex-end;
-  background: var(--mat-sys-primary-container, #e3f0fd);
-  border: 1px solid #cfe3f7;
+  background: var(--mat-sys-primary-container, #fdecec);
+  border: 1px solid #f7cfd0;
 }
 
 .burbuja-cabecera {
@@ -124,8 +124,8 @@
 
 .herramienta {
   font-size: 0.7rem;
-  background: #e8f0fe;
-  color: #1565c0;
+  background: #fdecec;
+  color: #b3121a;
   border-radius: 999px;
   padding: 2px 9px;
 }
@@ -226,8 +226,8 @@
 }
 
 .ejemplo:hover {
-  background: #eef6fd;
-  border-color: #b9d8f1;
+  background: #fdf4f4;
+  border-color: #f5c9cb;
 }
 
 .reglas {

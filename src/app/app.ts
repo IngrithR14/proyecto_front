@@ -50,13 +50,12 @@ export class App implements OnInit, OnDestroy {
   readonly fmtEntero = fmtEntero;
 
   readonly items: ItemMenu[] = [
-    { ruta: '/', etiqueta: 'Inicio', icono: 'space_dashboard', desc: 'Resumen general' },
-    { ruta: '/eda', etiqueta: 'EDA', icono: 'query_stats', desc: 'Perfil y distribuciones' },
+    { ruta: '/', etiqueta: 'EDA', icono: 'query_stats', desc: 'Perfil y distribuciones' },
     {
       ruta: '/ruteo',
       etiqueta: 'Modelo de ruteo',
       icono: 'route',
-      desc: 'Alternativa A vs B',
+      desc: 'NN vs ACO',
     },
     {
       ruta: '/montecarlo',
@@ -64,7 +63,7 @@ export class App implements OnInit, OnDestroy {
       icono: 'casino',
       desc: 'Número de asesores K',
     },
-    { ruta: '/asistente', etiqueta: 'Asistente', icono: 'smart_toy', desc: 'Chat con 9 herramientas' },
+    { ruta: '/asistente', etiqueta: 'Asistente', icono: 'smart_toy', desc: 'Chat con IA' },
   ];
 
   ngOnInit(): void {

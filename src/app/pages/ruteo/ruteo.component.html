@@ -1,14 +1,7 @@
 <div class="pagina-titulo">
   <mat-icon>route</mat-icon>
-  <h1>Modelo de ruteo: constructores de rutas y estrategias de territorio</h1>
+  <h1>Modelo de ruteo</h1>
 </div>
-<p class="pagina-subtitulo">
-  <strong>Vecino más cercano (NN)</strong> y <strong>colonias de hormigas (ACO)</strong> son dos
-  constructores de la secuencia de visitas; se comparan <em>por pares de ruta</em> (misma ruta,
-  mismo territorio y misma fecha, con las mismas restricciones de tope, ventana y fechas).
-  También se muestran las estrategias de territorio contra <strong>ACTUAL</strong> y la regla de
-  decisión que gobierna la recomendación.
-</p>
 
 <app-carga-estado
   [cargando]="cargando()"
@@ -41,38 +34,10 @@
       </div>
       <div class="col-6 col-lg-3">
         <app-kpi-card
-          etiqueta="Decisión de la regla"
-          [valor]="decisionCorto"
-          subtitulo="5 condiciones declaradas antes de ver resultados"
-          icono="rule"
-          [tono]="decisionTono" />
-      </div>
-      <div class="col-6 col-lg-3">
-        <app-kpi-card
-          etiqueta="Ciclo completo con ACO"
-          [valor]="kpiTiempos"
-          [subtitulo]="'en paralelo con ' + fmtEntero(nn.global?.n_jobs ?? null) + ' procesos · límite 30 min'"
-          icono="timer" />
-      </div>
-    </div>
-  }
-
-  <!-- ============================ KPI de la validación cruzada -->
-  @if (kfold(); as kf) {
-    <div class="row g-3 mb-3">
-      <div class="col-6 col-lg-3">
-        <app-kpi-card
           etiqueta="Distancia por ciclo"
           [valor]="fmtEntero(metricaDe('km_ciclo')?.media)"
           subtitulo="km · media de los 5 pliegues"
           icono="route" />
-      </div>
-      <div class="col-6 col-lg-3">
-        <app-kpi-card
-          etiqueta="Costo por ciclo"
-          [valor]="fmtDec2(metricaDe('costo_det_M')?.media)"
-          subtitulo="M COP · fijo + combustible"
-          icono="payments" />
       </div>
       <div class="col-6 col-lg-3">
         <app-kpi-card
@@ -81,125 +46,13 @@
           [subtitulo]="'máximo diario: ' + fmtEntero(cap() ?? null) + ' visitas'"
           icono="speed" />
       </div>
-      <div class="col-6 col-lg-3">
-        <app-kpi-card
-          etiqueta="Días sobre el tope"
-          [valor]="fmtDec1(metricaDe('dias_sobre_cap')?.media)"
-          subtitulo="media por ciclo · debe ser 0"
-          icono="warning"
-          [tono]="(metricaDe('dias_sobre_cap')?.media ?? 1) === 0 ? 'exito' : 'alerta'" />
-      </div>
     </div>
   }
 
   <!-- ============================ Sección 2: NN vs ACO -->
   @if (nnAco(); as nn) {
     <div class="row g-3 mb-3">
-      <div class="col-12 col-xl-6">
-        <div class="tarjeta h-100">
-          <h2 class="tarjeta-titulo"><mat-icon>traffic</mat-icon> Semáforo: regla de decisión</h2>
-          <p class="tarjeta-subtitulo">
-            Las cinco condiciones se declararon <strong>antes</strong> de ver los resultados y no se
-            ajustaron después. Todas deben cumplirse para adoptar ACO en todo el ciclo.
-          </p>
-          <div class="mb-3">
-            @if (reglaNnAco; as r) {
-              <app-chip-colorida [texto_]="decisionTexto" [tono]="decisionTono" />
-            } @else {
-              <app-chip-colorida texto_="Sin datos" tono="neutro" />
-            }
-          </div>
-          <ul class="semaforo">
-            @for (c of condicionesNnAco; track c.clave) {
-              <li>
-                <mat-icon [class.ok]="c.cumple" [class.no]="!c.cumple">
-                  {{ c.cumple ? 'check_circle' : 'cancel' }}
-                </mat-icon>
-                <span class="semaforo-texto">{{ c.etiqueta }}</span>
-                <app-chip-colorida
-                  [texto_]="c.cumple ? 'Se cumple' : 'No se cumple'"
-                  [tono]="c.cumple ? 'exito' : 'alerta'" />
-              </li>
-            }
-          </ul>
-          @if (reglaNnAco?.rangos_con_aco?.length; as n) {
-            <p class="datilla mb-0">
-              La decisión es mixta: ACO sólo en {{ n }} rango de tamaño de ruta
-              ({{ reglaNnAco?.rangos_con_aco?.join(' · ') }}), NN en el resto.
-            </p>
-          }
-        </div>
-      </div>
-
-      <div class="col-12 col-xl-6">
-        <div class="tarjeta h-100">
-          <h2 class="tarjeta-titulo"><mat-icon>table_chart</mat-icon> Ahorro por tamaño de ruta</h2>
-          <p class="tarjeta-subtitulo">
-            Intervalo de confianza del 95 % obtenido por remuestreo de rutas (10.000 muestras,
-            semilla fija 777). Porcentaje de rutas en que ACO queda mejor, igual (tolerancia
-            declarada de 0,1 %) o peor.
-          </p>
-          <div class="tabla-responsive">
-            <table class="tabla-suave">
-              <thead>
-                <tr>
-                  <th>Tamaño de ruta</th>
-                  <th class="num">Rutas</th>
-                  <th class="num">Ahorro medio</th>
-                  <th class="num">Intervalo de confianza del 95 %</th>
-                  <th class="num">Mejor / igual / peor (%)</th>
-                  <th class="num">Km NN</th>
-                  <th class="num">Km ACO</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (t of nn.por_tamano; track t.rango) {
-                  <tr>
-                    <td><strong>{{ t.rango }}</strong></td>
-                    <td class="num">{{ fmtEntero(t.n_rutas) }}</td>
-                    <td class="num">
-                      <strong>{{ fmtDec1(t.ahorro_medio_pct) }} %</strong>
-                    </td>
-                    <td class="num">
-                      {{ fmtDec1(t.ic95_inf_pct) }} % – {{ fmtDec1(t.ic95_sup_pct) }} %
-                    </td>
-                    <td class="num">
-                      {{ fmtEntero(t.pct_mejor) }} / {{ fmtEntero(t.pct_empate) }} /
-                      {{ fmtEntero(t.pct_peor) }}
-                    </td>
-                    <td class="num">{{ fmtEntero(t.km_nn_total) }}</td>
-                    <td class="num">{{ fmtEntero(t.km_aco_total) }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-          <p class="datilla mt-2 mb-0">
-            Violaciones de ventana de visita en todo el experimento:
-            <strong>{{ fmtEntero(nn.global?.violaciones_ventana) }}</strong> (debe ser 0).
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="row g-3 mb-3">
-      <div class="col-12 col-xl-6">
-        <div class="tarjeta h-100">
-          <h2 class="tarjeta-titulo"><mat-icon>bar_chart</mat-icon> Histograma de ahorros por ruta</h2>
-          <p class="tarjeta-subtitulo">
-            Cada barra cuenta cuántas rutas quedaron con ese ahorro. Verde: ACO quedó mejor;
-            gris: empate (diferencia ≤ 0,1 %); rojo: ACO quedó peor.
-          </p>
-          <div class="grafica">
-            <app-chart
-              type="bar"
-              [data]="histogramaAhorros.data"
-              [options]="histogramaAhorros.options"
-              [height]="280" />
-          </div>
-        </div>
-      </div>
-      <div class="col-12 col-xl-6">
+      <div class="col-12">
         <div class="tarjeta h-100">
           <h2 class="tarjeta-titulo"><mat-icon>show_chart</mat-icon> Ahorro frente a ausencias</h2>
           <p class="tarjeta-subtitulo">
@@ -219,67 +72,58 @@
     </div>
 
     <div class="row g-3 mb-3">
-      <div class="col-12 col-xl-7">
-        <div class="tarjeta h-100">
-          <h2 class="tarjeta-titulo"><mat-icon>schedule</mat-icon> Tiempos de cómputo</h2>
-          <p class="tarjeta-subtitulo">
-            La condición de tiempo de la regla usa el reloj de pared del ciclo completo con los
-            procesos en paralelo, no la suma de CPU de cada ruta.
-          </p>
-          <div class="grafica">
-            <app-chart
-              type="bar"
-              [data]="tiemposChart.data"
-              [options]="tiemposChart.options"
-              [height]="230" />
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-xl-5">
+      <div class="col-12 col-lg-6">
         <div class="tarjeta tarjeta-wilcoxon mb-3">
-          <h2 class="tarjeta-titulo"><mat-icon>balance</mat-icon> Contraste por ruta</h2>
+          <h2 class="tarjeta-titulo"><mat-icon>balance</mat-icon> ¿La ventaja de ACO es real?</h2>
           <p class="tarjeta-subtitulo">
-            Prueba de Wilcoxon pareada sobre los kilómetros de ACO y de NN por ruta (muestra
-            grande, por eso se informa también el tamaño del efecto).
+            Comparamos ruta por ruta los kilómetros de NN y de ACO con los mismos clientes y
+            las mismas fechas. Así se ve si la ventaja se repite en todos los casos o si fue
+            una coincidencia.
           </p>
           @if (nnAco()?.wilcoxon; as w) {
-            <div class="wilcoxon-valor">p = {{ pValorTexto }}</div>
-            <div class="datilla">Valor p</div>
-            <div class="wilcoxon-valor">r = {{ fmtDec2(w.efecto_r) }}</div>
-            <div class="datilla">Tamaño del efecto ({{ w.interpretacion_efecto ?? '—' }})</div>
+            <div class="wilcoxon-valor">{{ pValorTexto }}</div>
+            <div class="datilla">Probabilidad de que la diferencia sea casualidad</div>
+            <div class="wilcoxon-valor">{{ fmtDec2(w.efecto_r) }}</div>
+            <div class="datilla">
+              Tamaño de la diferencia en la práctica ({{ w.interpretacion_efecto ?? '—' }})
+            </div>
             <div class="mt-2">
               @if (w.significativo_005) {
-                <app-chip-colorida texto_="Diferencia significativa (α = 0,05)" tono="exito" />
+                <app-chip-colorida texto_="La diferencia no es casual" tono="exito" />
               } @else {
-                <app-chip-colorida texto_="Sin diferencia significativa" tono="alerta" />
+                <app-chip-colorida texto_="Podría ser casualidad" tono="alerta" />
               }
             </div>
-            <p class="datilla mt-2 mb-0">n = {{ fmtEntero(w.n) }} rutas pareadas.</p>
+            <p class="datilla mt-2 mb-0">
+              Se compararon {{ fmtEntero(w.n) }} rutas, una contra otra.
+            </p>
           } @else {
             <p class="tarjeta-subtitulo">Sin datos.</p>
           }
         </div>
+      </div>
 
+      <div class="col-12 col-lg-6">
         <div class="tarjeta tarjeta-destacada">
-          <h2 class="tarjeta-titulo"><mat-icon>scatter_plot</mat-icon> Dispersión del ACO</h2>
+          <h2 class="tarjeta-titulo"><mat-icon>scatter_plot</mat-icon> ¿Es estable el resultado de ACO?</h2>
           <p>
-            Cada ruta se resuelve con {{ fmtEntero(nn.global?.dispersion_aco?.semillas_por_ruta ?? null) }}
-            semillas del algoritmo y se usa la <strong>mediana</strong> como valor ACO.
+            ACO no devuelve siempre el mismo número: depende de la casualidad con la que
+            arranca (las <em>semillas</em>). Para no quedarnos con un solo resultado, cada
+            ruta se resolvió
+            <strong>{{ fmtEntero(nn.global?.dispersion_aco?.semillas_por_ruta ?? null) }} veces</strong>
+            y se tomó el valor central.
           </p>
           <p class="mb-0">
-            Desviación estándar media entre semillas:
-            <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_media_seeds_km ?? null) }} km</strong>;
-            máxima: <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_max_seeds_km ?? null) }} km</strong>.
-            NN es determinista, no tiene dispersión.
+            Repetir el cálculo cambia la distancia en
+            <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_media_seeds_km ?? null) }} km</strong>
+            de promedio y como máximo
+            <strong>{{ fmtDec2(nn.global?.dispersion_aco?.desv_max_seeds_km ?? null) }} km</strong>:
+            muy poco frente a los kilómetros de una ruta.
+            <strong>NN siempre da exactamente el mismo resultado</strong>, no depende de la
+            casualidad.
           </p>
         </div>
       </div>
-    </div>
-
-    <div class="tarjeta mb-3">
-      <h2 class="tarjeta-titulo"><mat-icon>gavel</mat-icon> Criterio escrito de la regla</h2>
-      <p class="tarjeta-subtitulo mb-0">{{ criterioNnAco }}</p>
     </div>
   } @else {
     <div class="tarjeta mb-3">
@@ -624,45 +468,4 @@
     }
   </div>
 
-  <!-- ============================ Cómo leer -->
-  <div class="tarjeta mt-3">
-    <h2 class="tarjeta-titulo"><mat-icon>description</mat-icon> Cómo leer este resultado</h2>
-    <ul class="explicacion">
-      <li>
-        <strong>Ajuste y evaluación están separados</strong>: el 20 % de los clientes (estratificado
-        por zona) queda como test sellado y sólo se usa para evaluar, por inserción más barata.
-        Ningún parámetro se ajustó para acercar el resultado a lo esperado.
-      </li>
-      <li>
-        <strong>Comparación por pares de ruta</strong>: NN y ACO reciben exactamente la misma ruta
-        (mismos clientes, fechas, tope y ventana), así que la diferencia de kilómetros es
-        atribuible sólo al constructor de la secuencia.
-      </li>
-      <li>
-        <strong>Regla NN vs ACO</strong>: cinco condiciones con umbrales declarados de antemano
-        (ahorro mínimo, intervalo de confianza, robustez ante ausencias, cero violaciones de
-        ventana y tiempo de ciclo). Si alguna falla, no se adopta ACO en todo el ciclo; si sólo
-        gana en un rango de tamaño de ruta, la decisión es mixta.
-      </li>
-      <li>
-        <strong>Regla de estrategias</strong>: seis condiciones contra ACTUAL y sólo
-        <em>REBAL_58</em> (re-balanceo mínimo) puede ser recomendada; la reagrupación global de
-        asesores es diagnóstica y nunca se recomienda. Si ninguna candidata cumple, el veredicto
-        es literalmente "ninguna estrategia cumple las condiciones".
-      </li>
-      <li>
-        <strong>Umbrales no calibrados</strong>: los valores de decisión son una propuesta
-        declarada antes de los resultados; el costo fijo por asesor sigue siendo un supuesto
-        (1.800.000 COP/mes) y las horas extra requieren el simulador del ciclo completo.
-      </li>
-      <li>
-        <strong>Límite conocido</strong>: con un mes único no hay validación temporal; la
-        generalización se sostiene sobre pliegues e inserción de test, no sobre otros meses.
-      </li>
-      <li>
-        <strong>Privacidad</strong>: todo lo que se muestra son agregados y códigos internos; no
-        se exponen cédulas, nombres ni direcciones de clientes.
-      </li>
-    </ul>
-  </div>
 </app-carga-estado>

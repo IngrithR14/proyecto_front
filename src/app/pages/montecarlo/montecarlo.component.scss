@@ -17,7 +17,7 @@
 .k-valor {
   font-size: 1.45rem;
   font-weight: 700;
-  color: var(--mat-sys-primary, #12639f);
+  color: var(--mat-sys-primary, #a3141a);
   font-variant-numeric: tabular-nums;
 }
 
@@ -46,7 +46,21 @@
 }
 
 .tarjeta-mejor {
-  border-left: 4px solid #f9a825;
+  border-left: 4px solid #d4a92c;
+}
+
+/* Selector de K: lo que era rojo (primary) pasa a ámbar #D4A92C.
+   Redefinir --mat-sys-primary sólo dentro de esta tarjeta pinta en ámbar el
+   icono del título y el slider (handle + pista activa), que leen esa variable. */
+.tarjeta-ambar {
+  --mat-sys-primary: #d4a92c;
+  --mat-sys-primary-container: #f6ecc9;
+  --mat-sys-on-primary-container: #4a3b00;
+
+  /* Texto sobre blanco: ámbar oscuro (#D4A92C da ~2:1 y no se lee). */
+  .k-valor {
+    color: #6f5100;
+  }
 }
 
 .supuestos {
@@ -75,7 +89,7 @@
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.5px;
-  background: #1565c0;
+  background: #ec1c24;
   color: #fff;
   border-radius: 999px;
   padding: 2px 7px;
@@ -91,9 +105,9 @@
   align-items: center;
   gap: 8px;
   font-size: 0.8rem;
-  background: #fff8e1;
-  border: 1px solid #ffe082;
-  color: #7a5b00;
+  background: #fdf6e3;
+  border: 1px solid #e8cb72;
+  color: #6f5100;
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 12px;

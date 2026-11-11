@@ -65,7 +65,7 @@ export class ApiService {
     return this.get<EdaResumen>('/eda/resumen');
   }
 
-  cargaZona(top = 15): Observable<CargaZona> {
+  cargaZona(top = 1000): Observable<CargaZona> {
     return this.get<CargaZona>(`/eda/carga-zona?top=${top}`);
   }
 

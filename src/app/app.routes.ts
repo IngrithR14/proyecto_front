@@ -1,17 +1,17 @@
 import { Routes } from '@angular/router';
 
-/** Rutas con lazy loading (loadComponent) de las 5 secciones. */
+/** Rutas con lazy loading (loadComponent) de las 4 secciones (el EDA es la raíz). */
 export const routes: Routes = [
   {
     path: '',
-    title: 'Inicio · Ruteo Hijos de León',
-    loadComponent: () =>
-      import('./pages/inicio/inicio.component').then((m) => m.InicioComponent),
-  },
-  {
-    path: 'eda',
     title: 'EDA · Ruteo Hijos de León',
     loadComponent: () => import('./pages/eda/eda.component').then((m) => m.EdaComponent),
+  },
+  {
+    // Alias: conserva enlaces y favoritos a /eda.
+    path: 'eda',
+    redirectTo: '',
+    pathMatch: 'full',
   },
   {
     path: 'ruteo',

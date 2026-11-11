@@ -11,6 +11,11 @@
   margin-top: 12px;
 }
 
+/* Con las 67 zonas se necesita un poco más de alto que el global (430px). */
+.tabla-scroll {
+  max-height: 520px;
+}
+
 .resumen-cal {
   display: flex;
   flex-wrap: wrap;
@@ -18,18 +23,12 @@
   margin-top: 12px;
 }
 
-.subtitulo-ct {
-  font-size: 0.8rem;
-  font-weight: 600;
-  margin: 14px 0 6px;
-  color: var(--mat-sys-on-surface);
-}
-
-.tabla-ct {
-  font-size: 0.72rem;
-}
-
-.tabla-ct tbody td,
-.tabla-ct thead th {
-  padding: 5px 8px;
+/* Mapas de correlación como imágenes estáticas (exportadas del notebook EDA). */
+.mapa-correlacion {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 4px;
+  border-radius: 6px;
+  background: #fff;
 }

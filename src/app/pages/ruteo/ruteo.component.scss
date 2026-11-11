@@ -11,7 +11,7 @@
 }
 
 .tarjeta-wilcoxon {
-  border-left: 4px solid var(--mat-sys-primary, #1e88e5);
+  border-left: 4px solid var(--mat-sys-primary, #ec1c24);
 }
 
 .wilcoxon-valor {
@@ -23,28 +23,12 @@
 }
 
 .tarjeta-destacada {
-  background: linear-gradient(180deg, #eef7ff 0%, #ffffff 70%);
-  border-left: 4px solid #43a047;
+  background: linear-gradient(180deg, #fdf7e8 0%, #ffffff 70%);
+  border-left: 4px solid #d4a92c;
 
   p {
     font-size: 0.85rem;
     line-height: 1.55;
-  }
-}
-
-.explicacion {
-  margin: 6px 0 0;
-  padding-left: 18px;
-
-  li {
-    font-size: 0.84rem;
-    line-height: 1.6;
-    margin-bottom: 8px;
-    color: var(--mat-sys-on-surface-variant, #546e7a);
-
-    strong {
-      color: var(--mat-sys-on-surface, #10202c);
-    }
   }
 }
 
@@ -88,33 +72,7 @@
   background: #fff8e1 !important;
 }
 
-/* -------- Semáforo de condiciones (reglas de decisión) -------- */
-.semaforo {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 9px 0;
-    border-bottom: 1px dashed #e3e9ee;
-
-    &:last-child {
-      border-bottom: 0;
-    }
-  }
-
-  .semaforo-texto {
-    flex: 1;
-    font-size: 0.84rem;
-    line-height: 1.45;
-    color: var(--mat-sys-on-surface-variant, #546e7a);
-  }
-}
-
-/* Iconos ✓ / ✗ / neutro (semáforo y tablas de dimensiones) */
+/* Iconos ✓ / ✗ / neutro (tablas de dimensiones) */
 mat-icon.ok {
   color: #2e7d32;
   font-size: 20px;

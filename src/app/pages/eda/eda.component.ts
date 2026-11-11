@@ -5,16 +5,13 @@ import { MatButtonModule } from '@angular/material/button';
 import { ApiService } from '../../core/api.service';
 import {
   fmtDec1,
-  fmtDec2,
   fmtEntero,
   fmtPct,
   mensajeError,
 } from '../../core/formato';
-import { SERIE, colorPorCategoria } from '../../core/paleta';
+import { SERIE } from '../../core/paleta';
 import type { CargaZona, EdaResumen } from '../../core/models';
 import { ChartComponent } from '../../shared/chart.component';
-import { HeatmapComponent } from '../../shared/heatmap.component';
-import { MapaLeafletComponent, Leyenda } from '../../shared/mapa-leaflet.component';
 import { KpiCardComponent } from '../../shared/kpi-card.component';
 import { CargaEstadoComponent } from '../../shared/carga-estado.component';
 import type { ChartConfiguration } from 'chart.js';
@@ -34,8 +31,6 @@ interface DistDef {
     MatIconModule,
     MatButtonModule,
     ChartComponent,
-    HeatmapComponent,
-    MapaLeafletComponent,
     KpiCardComponent,
     CargaEstadoComponent,
   ],
@@ -52,9 +47,7 @@ export class EdaComponent implements OnInit {
 
   readonly fmtEntero = fmtEntero;
   readonly fmtDec1 = fmtDec1;
-  readonly fmtDec2 = fmtDec2;
   readonly fmtPct = fmtPct;
-  readonly colorPorCategoria = colorPorCategoria;
 
   readonly distribuciones: DistDef[] = [
     {
@@ -70,29 +63,12 @@ export class EdaComponent implements OnInit {
       nota: 'Cundinamarca y Boyacá.',
     },
     {
-      clave: 'dias_rep',
-      titulo: 'Días de visita',
-      icono: 'calendar_view_week',
-      nota: 'Día de la semana en que se hacen las visitas.',
-    },
-    {
       clave: 'periodo_rep',
       titulo: 'Frecuencia de visitas',
       icono: 'date_range',
       nota: 'Mes completo, 1.ª o 2.ª quincena (según FRE_REP).',
     },
-    { clave: 'estrato', titulo: 'Estrato', icono: 'stairs', nota: 'Estrato socioeconómico.' },
   ];
-
-  readonly leyendaScatter: Leyenda = {
-    titulo: 'Categoría de actividad',
-    items: [
-      { label: 'Tiendas', color: colorPorCategoria('Tiendas') },
-      { label: 'Bodegas', color: colorPorCategoria('Bodegas') },
-      { label: 'Entretenimiento', color: colorPorCategoria('Entretenimiento') },
-      { label: 'Otros', color: colorPorCategoria('Otros') },
-    ],
-  };
 
   ngOnInit(): void {
     this.cargar();
@@ -113,7 +89,7 @@ export class EdaComponent implements OnInit {
       },
     });
 
-    this.api.cargaZona(15).subscribe({
+    this.api.cargaZona().subscribe({
       next: (c) => this.cargaZona.set(c),
       error: () => this.cargaZona.set(this.resumen()?.carga_zona ?? null),
     });
@@ -218,7 +194,7 @@ export class EdaComponent implements OnInit {
           {
             label: 'Frecuencia',
             data: counts,
-            backgroundColor: '#4d8fd1',
+            backgroundColor: '#ec1c24',
             borderRadius: 2,
             barPercentage: 1,
             categoryPercentage: 0.95,
@@ -246,25 +222,19 @@ export class EdaComponent implements OnInit {
   /* ---------------- Carga por zona ---------------- */
 
   chartCarga(): ChartConfiguration<'bar'> {
-    const c = this.cargaZona();
+    const filas = this.filasCarga;
     return {
       type: 'bar',
       data: {
-        labels: c?.zonas ?? [],
+        labels: filas.map((f) => f.zona),
         datasets: [
           {
             label: 'Clientes',
-            data: c?.clientes ?? [],
-            backgroundColor: '#9fc6e8',
+            data: filas.map((f) => f.clientes),
+            backgroundColor: '#d4a92c',
             borderRadius: 4,
-            yAxisID: 'y',
-          },
-          {
-            label: 'Visitas/día',
-            data: c?.visitas_dia ?? [],
-            backgroundColor: '#00897b',
-            borderRadius: 4,
-            yAxisID: 'y1',
+            categoryPercentage: 0.85,
+            barPercentage: 0.9,
           },
         ],
       },
@@ -272,28 +242,28 @@ export class EdaComponent implements OnInit {
         scales: {
           y: {
             beginAtZero: true,
-            position: 'left',
             grid: { color: '#eef2f5' },
             ticks: { font: { size: 10 } },
             title: { display: true, text: 'Clientes', font: { size: 10 } },
           },
-          y1: {
-            beginAtZero: true,
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            ticks: { font: { size: 10 } },
-            title: { display: true, text: 'Visitas/día', font: { size: 10 } },
+          x: {
+            grid: { display: false },
+            ticks: {
+              autoSkip: false,
+              maxRotation: 60,
+              minRotation: 60,
+              font: { size: 8 },
+            },
           },
-          x: { grid: { display: false }, ticks: { font: { size: 9 } } },
         },
         plugins: {
           legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
           tooltip: {
             callbacks: {
               afterBody: (items) => {
-                const i = items[0]?.dataIndex ?? 0;
-                const z = c?.zonas?.[i] ?? '';
-                return `${z} · visitas/mes: ${fmtEntero(c?.visitas_mes_rep?.[i])} · activos: ${fmtEntero(c?.activos?.[i])}`;
+                const f = filas[items[0]?.dataIndex ?? 0];
+                if (!f) return '';
+                return `${f.zona} · visitas/mes: ${fmtEntero(f.vm)} · activos: ${fmtEntero(f.activos)}`;
               },
             },
           },
@@ -305,24 +275,16 @@ export class EdaComponent implements OnInit {
   get filasCarga(): { zona: string; clientes: number; activos: number; vm: number; vd: number }[] {
     const c = this.cargaZona();
     if (!c) return [];
-    return c.zonas.map((z, i) => ({
-      zona: z,
-      clientes: c.clientes[i] ?? 0,
-      activos: c.activos[i] ?? 0,
-      vm: c.visitas_mes_rep[i] ?? 0,
-      vd: c.visitas_dia[i] ?? 0,
-    }));
-  }
-
-  /* ---------------- Mapa ---------------- */
-
-  get puntosMapa() {
-    return (this.resumen()?.scatter ?? []).slice(0, 2500).map((p) => ({
-      lat: p.lat,
-      lon: p.lon,
-      t: p.cat,
-      meta: p.dep,
-    }));
+    return c.zonas
+      .map((z, i) => ({
+        zona: z,
+        clientes: c.clientes[i] ?? 0,
+        activos: c.activos[i] ?? 0,
+        vm: c.visitas_mes_rep[i] ?? 0,
+        vd: c.visitas_dia[i] ?? 0,
+      }))
+      // Orden: de mayor a menor número de clientes.
+      .sort((a, b) => b.clientes - a.clientes);
   }
 
   /* ---------------- Correlaciones ---------------- */
@@ -336,28 +298,5 @@ export class EdaComponent implements OnInit {
         eta: { index: [], columns: [], matriz: [] },
       }
     );
-  }
-
-  get paresRelevantes() {
-    return (this.correlaciones.pearson_pares ?? [])
-      .filter((p) => Math.abs(p.r) >= 0.5)
-      .sort((a, b) => Math.abs(b.r) - Math.abs(a.r));
-  }
-
-  get crosstabs() {
-    return this.resumen()?.crosstabs ?? {};
-  }
-
-  get crosstabKeys(): string[] {
-    return Object.keys(this.crosstabs);
-  }
-
-  tituloCrosstab(clave: string): string {
-    const mapa: Record<string, string> = {
-      cat_vs_activo: 'Categoría × Activo comercial',
-      cat_vs_poblacion: 'Categoría × Tipo de población',
-      cat_vs_departamento: 'Categoría × Departamento',
-    };
-    return mapa[clave] ?? clave;
   }
 }

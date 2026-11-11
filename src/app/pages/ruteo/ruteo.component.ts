@@ -21,12 +21,6 @@ import { CargaEstadoComponent } from '../../shared/carga-estado.component';
 import { KpiCardComponent } from '../../shared/kpi-card.component';
 import type { ChartConfiguration } from 'chart.js';
 
-interface Condicion {
-  clave: string;
-  etiqueta: string;
-  cumple: boolean;
-}
-
 interface ValorDim {
   valor: string;
   detalle: string;
@@ -178,66 +172,6 @@ export class RuteoComponent implements OnInit {
     return this.nnAco()?.global ?? null;
   }
 
-  get reglaNnAco() {
-    return this.reglas()?.nn_vs_aco ?? this.nnAco()?.regla ?? null;
-  }
-
-  get criterioNnAco(): string {
-    return this.nnAco()?.criterio_regla ?? this.reglas()?.criterio_nn_vs_aco ?? '';
-  }
-
-  get decisionTexto(): string {
-    switch (this.reglaNnAco?.decision) {
-      case 'aco':
-        return 'Se adopta ACO';
-      case 'mixta':
-        return 'ACO sólo en un rango de rutas';
-      case 'nn':
-        return 'Se mantiene NN';
-      default:
-        return 'Sin datos';
-    }
-  }
-
-  get decisionCorto(): string {
-    switch (this.reglaNnAco?.decision) {
-      case 'aco':
-        return 'ACO';
-      case 'mixta':
-        return 'Mixta';
-      case 'nn':
-        return 'NN';
-      default:
-        return '—';
-    }
-  }
-
-  get decisionTono(): 'exito' | 'alerta' | 'neutro' {
-    return this.reglaNnAco?.decision === 'aco' ? 'exito' : 'neutro';
-  }
-
-  /** Las cinco condiciones de la regla, en el orden del criterio. */
-  get condicionesNnAco(): Condicion[] {
-    const cumple = this.reglaNnAco?.cumple ?? {};
-    const u = this.reglaNnAco?.umbrales ?? {};
-    const ahorro = fmtDec1(u['ahorro_aco_pct'] ?? 2);
-    const tiempo = fmtEntero(u['tiempo_ciclo_min'] ?? 30);
-    const etiquetas: Record<string, string> = {
-      ahorro_minimo: `Ahorro medio por ruta ≥ ${ahorro} %`,
-      ic95_positivo:
-        'Límite inferior del intervalo de confianza del 95 % estrictamente mayor que 0',
-      persiste_con_085:
-        `El ahorro ≥ ${ahorro} % sigue cumpliéndose con el 15 % de clientes ausentes`,
-      sin_violaciones_ventana: 'Cero violaciones de la ventana de visita',
-      tiempo_ciclo: `Secuenciar el ciclo completo en ≤ ${tiempo} minutos (procesos en paralelo)`,
-    };
-    return Object.keys(etiquetas).map((clave) => ({
-      clave,
-      etiqueta: etiquetas[clave],
-      cumple: !!cumple[clave],
-    }));
-  }
-
   get kpiAhorro(): string {
     return fmtDec1(this.global?.ahorro_medio_pct ?? null);
   }
@@ -248,64 +182,11 @@ export class RuteoComponent implements OnInit {
     return `${fmtDec1(g.ic95_inf_pct)} % – ${fmtDec1(g.ic95_sup_pct)} %`;
   }
 
-  get kpiTiempos(): string {
-    const g = this.global;
-    if (!g) return '—';
-    return `${fmtEntero(Math.round(g.t_ciclo_min))} min`;
-  }
-
   get pValorTexto(): string {
     const p = this.nnAco()?.wilcoxon?.p_value;
     if (p === undefined || p === null) return '—';
     if (p < 0.001) return '< 0,001';
     return p.toFixed(4).replace('.', ',');
-  }
-
-  /** Histograma del ahorro por ruta: cuántas rutas gana ACO y cuántas no. */
-  get histogramaAhorros(): ChartConfiguration<'bar'> {
-    const vals = (this.nnAco()?.por_ruta ?? []).map((r) => r.ahorro_pct);
-    if (!vals.length) {
-      return { type: 'bar', data: { labels: [], datasets: [] } };
-    }
-    const min = Math.min(...vals);
-    const max = Math.max(...vals);
-    const ancho = Math.max(0.5, Math.ceil(((max - min) / 12) * 2) / 2);
-    const desde = Math.floor(min / ancho) * ancho;
-    const n = Math.max(1, Math.ceil((max - desde) / ancho + 1e-9) + 1);
-    const conteo = new Array<number>(n).fill(0);
-    for (const v of vals) {
-      const i = Math.min(n - 1, Math.max(0, Math.floor((v - desde) / ancho)));
-      conteo[i]++;
-    }
-    const colores = conteo.map((_, i) => {
-      const centro = desde + (i + 0.5) * ancho;
-      return centro > 0 ? '#43a047' : centro < 0 ? '#e53935' : '#90a4ae';
-    });
-    return {
-      type: 'bar',
-      data: {
-        labels: conteo.map((_, i) => fmtDec1(desde + i * ancho)),
-        datasets: [
-          { label: 'Rutas', data: conteo, backgroundColor: colores, borderRadius: 3 },
-        ],
-      },
-      options: {
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              title: (items) =>
-                `Ahorro de ${items[0]?.label ?? ''} % a ` +
-                `${fmtDec1(desde + (items[0]?.dataIndex ?? 0) * ancho + ancho)} %`,
-            },
-          },
-        },
-        scales: {
-          y: { title: { display: true, text: 'Número de rutas' }, ticks: { precision: 0 } },
-          x: { title: { display: true, text: 'Ahorro de ACO por ruta (%)' } },
-        },
-      },
-    };
   }
 
   /** Curva: ahorro medio con su intervalo de confianza frente a ausencias. */
@@ -358,45 +239,6 @@ export class RuteoComponent implements OnInit {
         scales: {
           y: { title: { display: true, text: 'Ahorro de ACO (%)' } },
           x: { title: { display: true, text: 'Clientes ausentes en el ciclo' } },
-        },
-      },
-    };
-  }
-
-  /** Tiempos: NN, ACO sumado y ACO en paralelo (lo que mide la regla). */
-  get tiemposChart(): ChartConfiguration<'bar'> {
-    const g = this.global;
-    if (!g) {
-      return { type: 'bar', data: { labels: [], datasets: [] } };
-    }
-    return {
-      type: 'bar',
-      data: {
-        labels: [
-          'Vecino más cercano (NN): suma de rutas',
-          'Colonias de hormigas (ACO): suma de rutas',
-          'Colonias de hormigas (ACO): ciclo completo en paralelo',
-        ],
-        datasets: [
-          {
-            label: 'Minutos',
-            data: [g.t_nn_total_min, g.t_aco_total_min, g.t_ciclo_min],
-            backgroundColor: [SERIE[0], SERIE[1], SERIE[6]],
-            borderRadius: 4,
-          },
-        ],
-      },
-      options: {
-        indexAxis: 'y' as const,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: { label: (item) => `${fmtDec1(item.parsed.x)} minutos` },
-          },
-        },
-        scales: {
-          x: { title: { display: true, text: 'Minutos' } },
-          y: { ticks: { autoSkip: false } },
         },
       },
     };

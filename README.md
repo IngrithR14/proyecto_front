@@ -3,12 +3,11 @@
 Frontend **Angular 22 (standalone components, signals)** para la API FastAPI de ruteo de asesores
 (`/home/ingrith/Documentos/proyecto_especializacion/proyecto_back`).
 
-Cuatro áreas: **Inicio** (resumen), **EDA**, **Modelo de ruteo** (Alternativa A vs B),
-**MonteCarlo** (número de asesores K) y **Asistente** (chatbot LLM con 9 herramientas).
+Cuatro áreas: **EDA** (perfil y distribuciones), **Modelo de ruteo** (NN vs ACO),
+**MonteCarlo** (número de asesores K) y **Asistente** (chatbot LLM).
 
 > **Privacidad**: el dashboard y el chat nunca muestran datos personales (cédulas, nombres,
-> direcciones). Sólo agregados y coordenadas; el aviso está en el sidenav, el footer y en cada
-> sección.
+> direcciones). Sólo agregados y coordenadas; el aviso está en cada sección.
 
 ## Requisitos
 
@@ -59,14 +58,12 @@ src/app/
 ├── shared/
 │   ├── chart.component.ts            # wrapper Chart.js (type/data/options)
 │   ├── mapa-leaflet.component.ts     # mapa OSM con puntos + centroides + leyenda
-│   ├── heatmap.component.ts          # heatmaps como tabla coloreada
 │   ├── kpi-card.component.ts         # tarjeta KPI
 │   ├── chip-colorida.component.ts    # chips de estado (factible, supuesto…)
 │   ├── carga-estado.component.ts     # spinner / "calculando…" / error
 │   └── privacidad-footer.component.ts
 └── pages/
-    ├── inicio/                       # KPIs, embudo, calendario, tarjetas de secciones
-    ├── eda/                          # distribuciones, histogramas, carga por zona, mapa, correlaciones
+    ├── eda/                          # distribuciones, histogramas, carga por zona, correlaciones
     ├── ruteo/                        # NN vs ACO: tabla, caja y bigotes, Wilcoxon
     ├── montecarlo/                   # slider K 35–70, paneles, tabla comparativa, gráficas, mapa
     └── asistente/                    # chat estilo messenger con chips de herramientas
