@@ -130,7 +130,7 @@ export class AsistenteComponent implements OnInit, AfterViewChecked {
             texto:
               'No pude responder en este momento. ' +
               mensajeError(err) +
-              ' Verifique que la variable LLM_API_KEY esté configurada en el archivo .env del backend.',
+              ' El asistente está recibiendo muchas consultas. Espera un minuto e inténtalo de nuevo',
             herramientas: [],
             error: true,
             privacidadOk: true,
